@@ -1,6 +1,6 @@
 {
-  "name": "Reon Music",
-  "description": "Now playing music player with dynamic bento grid layout and electric blue aesthetic.",
+  "name": "REON",
+  "description": "Bit-perfect lossless audio player with Scandinavian reductive minimalism, real-time waveform seek, and DSP engine.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

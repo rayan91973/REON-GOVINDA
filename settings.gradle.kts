@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Reon Music"
+rootProject.name = "REON"
 
 include(":app")

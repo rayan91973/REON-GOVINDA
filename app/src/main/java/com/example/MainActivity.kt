@@ -143,6 +143,10 @@ class MainActivity : ComponentActivity() {
                 BackHandler {
                   homeViewModel.closeLikedSongs()
                 }
+              } else if (homeState.isDownloadsOpen) {
+                BackHandler {
+                  homeViewModel.closeDownloads()
+                }
               } else if (homeState.selectedArtist != null) {
                 BackHandler {
                   homeViewModel.closeArtist()
@@ -214,6 +218,8 @@ class MainActivity : ComponentActivity() {
                 onArtistFollowProfileToggle = { homeViewModel.toggleFollowArtistFromProfile() },
                 onOpenLikedSongs = { homeViewModel.openLikedSongs() },
                 onCloseLikedSongs = { homeViewModel.closeLikedSongs() },
+                onOpenDownloads = { homeViewModel.openDownloads() },
+                onCloseDownloads = { homeViewModel.closeDownloads() },
                 onOpenHistory = { homeViewModel.openHistory() },
                 onCloseHistory = { homeViewModel.closeHistory() },
                 onOpenSettings = { homeViewModel.openSettings() },

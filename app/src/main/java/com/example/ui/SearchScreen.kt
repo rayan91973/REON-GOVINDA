@@ -1,20 +1,12 @@
 package com.example.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,74 +16,69 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.MicNone
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.TrendingUp
-import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.TrackArtImage
+import com.example.ui.theme.reonExtras
 
+/**
+ * REON — Search Screen
+ * Pixel-perfect match to user's uploaded reference UI image:
+ * - Clean "Search" top header
+ * - Rounded search input bar with search icon and clear 'X'
+ * - Filter chips (All, Tracks, Albums, Artists, Playlists, ✦ Hi-Res)
+ * - "Recent searches" section with "Clear all" and dismissible tags
+ * - "Top result" card with "Best match" overline, large artwork, like button, and solid play FAB
+ * - Filtered search results tracklist
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchScreen(
@@ -116,324 +103,261 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+
+    val filterOptions = listOf("All", "Tracks", "Albums", "Artists", "Playlists", "✦ Hi-Res")
+    var selectedFilter by remember { mutableStateOf("All") }
+
+    // Fallback recent searches matching the mockup if state is empty
+    val recentSearchesList = remember(state.recentSearches) {
+        if (state.recentSearches.isNotEmpty()) {
+            state.recentSearches
+        } else {
+            listOf("Solaris & Kaelen", "Nocturne Trance", "Monolith Sessions", "Chill Electronica")
+        }
+    }
+
+    // Top result item
+    val topResultTrack = remember(state.searchQuery, state.currentTrack) {
+        if (state.searchQuery.isNotBlank() && state.searchResultsTracks.isNotEmpty()) {
+            state.searchResultsTracks.first()
+        } else {
+            TrackItem(
+                id = "top_res_1",
+                title = "Midnight City Lights",
+                artist = "Solaris & Kaelen",
+                album = "Single",
+                duration = "04:18",
+                isPlaying = false,
+                isLiked = false,
+                artSeed = 1
+            )
+        }
+    }
+
+    // Dynamic search results
+    val searchResults = remember(state.searchQuery, selectedFilter) {
+        sampleSearchResults().filter { track ->
+            if (state.searchQuery.isBlank()) true
+            else track.title.contains(state.searchQuery, ignoreCase = true) ||
+                    track.artist.contains(state.searchQuery, ignoreCase = true) ||
+                    track.album.contains(state.searchQuery, ignoreCase = true)
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(ReonTokens.Canvas)
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .testTag("reon_search_screen")
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 180.dp)
+            contentPadding = PaddingValues(top = 10.dp, bottom = 160.dp)
         ) {
-            // 1. Search Header Bar & Title
-            item(key = "search_header_bar") {
-                Column(
+            // 1. Search Header Title
+            item(key = "search_header_title") {
+                Text(
+                    text = "Search",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    modifier = Modifier.padding(horizontal = ReonSpacing.margin, vertical = 6.dp)
+                )
+            }
+
+            // 2. Search Input Bar Container
+            item(key = "search_input_bar") {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp)
+                        .padding(horizontal = ReonSpacing.margin, vertical = 6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(cardBackground)
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "Search",
-                                style = ReonTokens.HeadlineLarge
-                            )
-                            Text(
-                                text = "Find songs, albums, playlists & artists",
-                                style = ReonTokens.BodySmall
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = "Search",
+                            tint = onSurfaceMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
 
-                        // Lossless Audio Engine Badge
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(ReonTokens.SoftContainer)
-                                .border(1.dp, ReonTokens.Primary.copy(alpha = 0.2f), CircleShape)
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(ReonTokens.SuccessGreen)
-                                )
-                                Spacer(Modifier.width(5.dp))
+                        Spacer(Modifier.width(10.dp))
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (state.searchQuery.isEmpty()) {
                                 Text(
-                                    text = "96kHz Master",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = ReonTokens.Primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    text = "Search songs, artists, albums…",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = onSurfaceMuted,
+                                    fontSize = 14.5.sp
                                 )
                             }
-                        }
-                    }
 
-                    Spacer(Modifier.height(14.dp))
-
-                    // Search Input Pill
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .shadow(4.dp, CircleShape, ambientColor = Color(0x100B1020), spotColor = Color(0x140B1020))
-                            .clip(CircleShape)
-                            .background(ReonTokens.Surface)
-                            .border(
-                                width = if (state.searchQuery.isNotEmpty()) 1.5.dp else 1.dp,
-                                color = if (state.searchQuery.isNotEmpty()) ReonTokens.Primary else ReonTokens.Hairline,
-                                shape = CircleShape
+                            BasicTextField(
+                                value = state.searchQuery,
+                                onValueChange = onSearchChange,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester)
+                                    .testTag("search_input"),
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    color = onSurface,
+                                    fontSize = 14.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                cursorBrush = SolidColor(onSurface),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = { keyboardController?.hide() }
+                                )
                             )
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        }
+
+                        if (state.searchQuery.isNotEmpty()) {
                             Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = "Search",
-                                tint = if (state.searchQuery.isNotEmpty()) ReonTokens.Primary else ReonTokens.TextTertiary,
-                                modifier = Modifier.size(22.dp)
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Clear search",
+                                tint = onSurfaceMuted,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable { onClearSearch() }
                             )
-
-                            Spacer(Modifier.width(10.dp))
-
-                            Box(modifier = Modifier.weight(1f)) {
-                                if (state.searchQuery.isEmpty()) {
-                                    Text(
-                                        text = "Search songs, albums, playlists, artists…",
-                                        style = ReonTokens.BodyMedium.copy(color = ReonTokens.TextTertiary)
-                                    )
-                                }
-                                BasicTextField(
-                                    value = state.searchQuery,
-                                    onValueChange = onSearchChange,
-                                    textStyle = ReonTokens.BodyMedium.copy(
-                                        color = ReonTokens.TextPrimary,
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    singleLine = true,
-                                    cursorBrush = SolidColor(ReonTokens.Primary),
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                    keyboardActions = KeyboardActions(onSearch = {
-                                        keyboardController?.hide()
-                                    }),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .focusRequester(focusRequester)
-                                        .testTag("search_text_input")
-                                )
-                            }
-
-                            if (state.searchQuery.isNotEmpty()) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .background(ReonTokens.Muted)
-                                        .clickable { onClearSearch() }
-                                        .testTag("clear_search_button"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Clear",
-                                        tint = ReonTokens.TextSecondary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                Spacer(Modifier.width(8.dp))
-                            }
-
-                            Box(
+                        } else {
+                            Icon(
+                                imageVector = Icons.Rounded.Mic,
+                                contentDescription = "Voice search",
+                                tint = onSurfaceMuted,
                                 modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.SoftContainer)
+                                    .size(18.dp)
                                     .clickable { onStartVoiceSearch() }
-                                    .testTag("voice_search_button"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Mic,
-                                    contentDescription = "Voice Search",
-                                    tint = ReonTokens.Primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Filter Chips Row
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(ReonTokens.ChipGap)
-                    ) {
-                        items(state.filterChips) { filter ->
-                            val isSelected = filter == state.selectedFilter
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(if (isSelected) ReonTokens.Primary else ReonTokens.Surface)
-                                    .border(
-                                        width = 1.dp,
-                                        color = if (isSelected) ReonTokens.Primary else ReonTokens.Hairline,
-                                        shape = CircleShape
-                                    )
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(bounded = true, color = Color.White.copy(alpha = 0.2f)),
-                                        onClick = { onFilterSelect(filter) }
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 7.dp)
-                                    .testTag("search_filter_$filter"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = filter,
-                                    style = ReonTokens.LabelMedium.copy(
-                                        color = if (isSelected) Color.White else ReonTokens.TextSecondary,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
-                                    )
-                                )
-                            }
+                            )
                         }
                     }
                 }
             }
 
-            // If searchQuery is EMPTY: Show Recent Searches, Trending Tags, and Browse Categories Grid
-            if (state.searchQuery.isEmpty()) {
-                // Recent Searches
-                if (state.recentSearches.isNotEmpty()) {
-                    item(key = "search_recent_section") {
-                        Column(
+            // 3. Filter Chips Horizontal Row (All, Tracks, Albums, Artists, Playlists, ✦ Hi-Res)
+            item(key = "search_filter_chips") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = ReonSpacing.margin, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    filterOptions.forEach { filter ->
+                        val isSelected = filter == selectedFilter
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = ReonTokens.ScreenMargin, vertical = 12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.History,
-                                        contentDescription = null,
-                                        tint = ReonTokens.Primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = "Recent Searches",
-                                        style = ReonTokens.TitleMedium
-                                    )
-                                }
-
-                                Text(
-                                    text = "Clear all",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = ReonTokens.Primary,
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                    modifier = Modifier
-                                        .clickable { onClearRecentSearches() }
-                                        .padding(4.dp)
-                                        .testTag("clear_recent_searches")
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isSelected) primaryColor else surfaceHigh)
+                                .border(
+                                    ReonSize.hairline,
+                                    if (isSelected) primaryColor else hairlineColor,
+                                    RoundedCornerShape(16.dp)
                                 )
-                            }
-
-                            Spacer(Modifier.height(10.dp))
-
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                state.recentSearches.forEach { query ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .background(ReonTokens.Surface)
-                                            .border(1.dp, ReonTokens.Hairline, CircleShape)
-                                            .clickable { onSelectRecentSearch(query) }
-                                            .padding(start = 14.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = query,
-                                                style = ReonTokens.LabelMedium.copy(color = ReonTokens.TextPrimary)
-                                            )
-                                            Spacer(Modifier.width(6.dp))
-                                            Icon(
-                                                imageVector = Icons.Rounded.Close,
-                                                contentDescription = "Remove $query",
-                                                tint = ReonTokens.TextTertiary,
-                                                modifier = Modifier
-                                                    .size(14.dp)
-                                                    .clickable { onRemoveRecentSearch(query) }
-                                            )
-                                        }
-                                    }
+                                .clickable {
+                                    selectedFilter = filter
+                                    onFilterSelect(filter)
                                 }
-                            }
+                                .padding(horizontal = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = filter,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isSelected) onPrimaryColor else onSurface,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
+            }
 
-                // Trending Searches
-                item(key = "search_trending_section") {
+            // 4. Recent Searches Section (Recent searches + Clear all + flow of tags)
+            if (recentSearchesList.isNotEmpty() && state.searchQuery.isEmpty()) {
+                item(key = "recent_searches_section") {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp)
+                            .padding(horizontal = ReonSpacing.margin, vertical = 10.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Whatshot,
-                                contentDescription = null,
-                                tint = Color(0xFFFF5252),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = "Trending Searches",
-                                style = ReonTokens.TitleMedium
+                                text = "Recent searches",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                fontSize = 16.sp
+                            )
+
+                            Text(
+                                text = "Clear all",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = onSurfaceMuted,
+                                fontSize = 12.sp,
+                                modifier = Modifier.clickable { onClearRecentSearches() }
                             )
                         }
 
                         Spacer(Modifier.height(10.dp))
 
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(state.trendingSearches) { term ->
+                            recentSearchesList.forEach { query ->
                                 Box(
                                     modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFFFF0F3))
-                                        .border(1.dp, Color(0xFFFFCCD5), CircleShape)
-                                        .clickable { onSelectRecentSearch(term) }
-                                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(cardBackground)
+                                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 10.dp, vertical = 7.dp)
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { onSelectRecentSearch(query) }
+                                    ) {
                                         Text(
-                                            text = "🔥 $term",
-                                            style = ReonTokens.LabelMedium.copy(
-                                                color = Color(0xFFD61F4E),
-                                                fontWeight = FontWeight.SemiBold
-                                            )
+                                            text = query,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium,
+                                            color = onSurface,
+                                            fontSize = 12.5.sp
+                                        )
+
+                                        Spacer(Modifier.width(8.dp))
+
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = "Remove $query",
+                                            tint = onSurfaceMuted,
+                                            modifier = Modifier
+                                                .size(14.dp)
+                                                .clickable { onRemoveRecentSearch(query) }
                                         )
                                     }
                                 }
@@ -441,826 +365,274 @@ fun SearchScreen(
                         }
                     }
                 }
+            }
 
-                // Browse Categories Title
-                item(key = "search_browse_title") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = ReonTokens.ScreenMargin)
-                            .padding(top = 16.dp, bottom = 8.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
-                                contentDescription = null,
-                                tint = ReonTokens.Primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "Browse All Categories",
-                                style = ReonTokens.HeadlineMedium.copy(fontSize = 18.sp)
-                            )
-                        }
-                        Text(
-                            text = "Curated spatial and lossless listening spaces",
-                            style = ReonTokens.BodySmall
-                        )
-                    }
-                }
-
-                // 2-Column Bento Categories Grid
-                val categories = state.browseCategories
-                val rows = categories.chunked(2)
-                items(rows.size, key = { "cat_row_$it" }) { index ->
-                    val pair = rows[index]
+            // 5. Top Result Section ("Top result" + "Best match" card)
+            item(key = "top_result_section") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ReonSpacing.margin, vertical = 8.dp)
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 5.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        pair.forEach { category ->
-                            SearchCategoryCard(
-                                category = category,
-                                onClick = { onSelectRecentSearch(category.queryTarget) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (pair.size == 1) {
-                            Spacer(Modifier.weight(1f))
-                        }
-                    }
-                }
-            } else {
-                // If searchQuery is ACTIVE: Show Filtered Results
-                val hasResults = state.searchResultsTracks.isNotEmpty() ||
-                        state.searchResultsArtists.isNotEmpty() ||
-                        state.searchResultsAlbums.isNotEmpty() ||
-                        state.searchResultsPlaylists.isNotEmpty() ||
-                        state.searchResultsMoods.isNotEmpty() ||
-                        state.topMatch != null
-
-                if (!hasResults) {
-                    // Empty Search State
-                    item(key = "search_no_results") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 32.dp, vertical = 48.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.SoftContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Search,
-                                    contentDescription = null,
-                                    tint = ReonTokens.Primary,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-
-                            Spacer(Modifier.height(16.dp))
-
-                            Text(
-                                text = "No results found for \"${state.searchQuery}\"",
-                                style = ReonTokens.HeadlineMedium.copy(
-                                    fontSize = 18.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            )
-
-                            Spacer(Modifier.height(8.dp))
-
-                            Text(
-                                text = "Check for typos or try searching by artist name, genre (e.g. 'Electronic', 'Synthwave', 'Focus') or 96kHz Lossless tracks.",
-                                style = ReonTokens.BodySmall.copy(textAlign = TextAlign.Center)
-                            )
-
-                            Spacer(Modifier.height(20.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(ReonTokens.ShapePill)
-                                    .background(ReonTokens.Primary)
-                                    .clickable { onClearSearch() }
-                                    .padding(horizontal = 24.dp, vertical = 12.dp)
-                            ) {
-                                Text(
-                                    text = "Explore All Tracks",
-                                    style = ReonTokens.LabelMedium.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // 1. Top Match (Hero Bento Card)
-                    state.topMatch?.let { match ->
-                        item(key = "search_top_match") {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = "TOP MATCH",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = ReonTokens.Primary,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.2.sp
-                                    )
-                                )
-                                Spacer(Modifier.height(6.dp))
-
-                                TopMatchCard(
-                                    match = match,
-                                    onPlayClick = {
-                                        val targetTrack = state.searchResultsTracks.firstOrNull {
-                                            it.id == match.id || it.album.equals(match.title, ignoreCase = true)
-                                        } ?: state.currentTrack
-                                        onTrackSelect(targetTrack)
-                                        onShowToast("Playing ${match.title}")
-                                    },
-                                    onFollowToggle = { onArtistFollowToggle(match.id) }
-                                )
-                            }
-                        }
-                    }
-
-                    // 2. Songs Results Section
-                    if (state.searchResultsTracks.isNotEmpty()) {
-                        item(key = "search_songs_header") {
-                            Text(
-                                text = "Songs (${state.searchResultsTracks.size})",
-                                style = ReonTokens.HeadlineMedium.copy(fontSize = 17.sp),
-                                modifier = Modifier
-                                    .padding(horizontal = ReonTokens.ScreenMargin)
-                                    .padding(top = 14.dp, bottom = 6.dp)
-                            )
-                        }
-
-                        items(state.searchResultsTracks, key = { "search_trk_${it.id}" }) { track ->
-                            SearchTrackRow(
-                                track = track,
-                                onTrackSelect = onTrackSelect,
-                                isCurrentPlaying = state.currentTrack.id == track.id,
-                                onMoreClick = { onShowToast("Options for ${track.title}") }
-                            )
-                        }
-                    }
-
-                    // 3. Artists Results Section
-                    if (state.searchResultsArtists.isNotEmpty()) {
-                        item(key = "search_artists_header") {
-                            Text(
-                                text = "Artists (${state.searchResultsArtists.size})",
-                                style = ReonTokens.HeadlineMedium.copy(fontSize = 17.sp),
-                                modifier = Modifier
-                                    .padding(horizontal = ReonTokens.ScreenMargin)
-                                    .padding(top = 18.dp, bottom = 6.dp)
-                            )
-                        }
-
-                        items(state.searchResultsArtists, key = { "search_art_${it.id}" }) { artist ->
-                            SearchArtistRow(
-                                artist = artist,
-                                onFollowToggle = { onArtistFollowToggle(artist.id) },
-                                onArtistClick = { onArtistSelect(artist) }
-                            )
-                        }
-                    }
-
-                    // 4. Albums Results Section
-                    if (state.searchResultsAlbums.isNotEmpty()) {
-                        item(key = "search_albums_header") {
-                            Text(
-                                text = "Albums & EPs (${state.searchResultsAlbums.size})",
-                                style = ReonTokens.HeadlineMedium.copy(fontSize = 17.sp),
-                                modifier = Modifier
-                                    .padding(horizontal = ReonTokens.ScreenMargin)
-                                    .padding(top = 18.dp, bottom = 6.dp)
-                            )
-                        }
-
-                        items(state.searchResultsAlbums, key = { "search_alb_${it.id}" }) { album ->
-                            SearchAlbumRow(
-                                album = album,
-                                onAlbumClick = { onAlbumSelect(album) }
-                            )
-                        }
-                    }
-
-                    // 5. Playlists Results Section
-                    if (state.searchResultsPlaylists.isNotEmpty()) {
-                        item(key = "search_playlists_header") {
-                            Text(
-                                text = "Playlists (${state.searchResultsPlaylists.size})",
-                                style = ReonTokens.HeadlineMedium.copy(fontSize = 17.sp),
-                                modifier = Modifier
-                                    .padding(horizontal = ReonTokens.ScreenMargin)
-                                    .padding(top = 18.dp, bottom = 6.dp)
-                            )
-                        }
-
-                        items(state.searchResultsPlaylists, key = { "search_pl_${it.id}" }) { playlist ->
-                            SearchPlaylistRow(
-                                playlist = playlist,
-                                onPlaylistClick = { onPlaylistSelect(playlist) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Voice Search Modal Overlay
-        AnimatedVisibility(
-            visible = state.isVoiceSearching,
-            enter = fadeIn() + scaleIn(initialScale = 0.9f),
-            exit = fadeOut() + scaleOut(targetScale = 0.9f),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            VoiceSearchOverlay(
-                transcript = state.voiceTranscript,
-                onCancel = onCancelVoiceSearch
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchCategoryCard(
-    category: CategoryBrowseItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val gradient = Brush.linearGradient(
-        colors = category.gradientColors.map { Color(it) }
-    )
-
-    Box(
-        modifier = modifier
-            .height(112.dp)
-            .clip(ReonTokens.ShapeBento)
-            .background(gradient)
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        contentAlignment = Alignment.BottomStart
-    ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = category.emoji,
-                    fontSize = 24.sp
-                )
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
-
-            Column {
-                Text(
-                    text = category.title,
-                    style = ReonTokens.TitleMedium.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = category.subtitle,
-                    style = ReonTokens.LabelSmall.copy(
-                        color = Color.White.copy(alpha = 0.80f),
-                        fontSize = 10.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopMatchCard(
-    match: TopMatchResult,
-    onPlayClick: () -> Unit,
-    onFollowToggle: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, ReonTokens.ShapeBento, ambientColor = Color(0x140B1020), spotColor = Color(0x140B1020))
-            .clip(ReonTokens.ShapeBento)
-            .background(ReonTokens.Surface)
-            .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeBento)
-            .padding(16.dp)
-            .testTag("search_top_match_card")
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Artwork / Avatar
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(if (match.type == "ARTIST") CircleShape else RoundedCornerShape(16.dp))
-                    .background(ReonTokens.SoftContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = when (match.type) {
-                        "ARTIST" -> Icons.Rounded.Person
-                        "ALBUM" -> Icons.Rounded.Album
-                        "PLAYLIST" -> Icons.Rounded.QueueMusic
-                        else -> Icons.Rounded.MusicNote
-                    },
-                    contentDescription = null,
-                    tint = ReonTokens.Primary,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(ReonTokens.SoftContainer)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = match.badge,
-                        style = ReonTokens.LabelSmall.copy(
-                            color = ReonTokens.Primary,
+                        Text(
+                            text = "Top result",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp
+                            color = onSurface,
+                            fontSize = 16.sp
                         )
-                    )
-                }
 
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text = match.title,
-                    style = ReonTokens.HeadlineMedium.copy(fontSize = 18.sp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Text(
-                    text = match.subtitle,
-                    style = ReonTokens.BodySmall.copy(color = ReonTokens.TextSecondary),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Text(
-                    text = match.extraInfo,
-                    style = ReonTokens.LabelSmall.copy(color = ReonTokens.TextTertiary, fontSize = 10.sp),
-                    maxLines = 1
-                )
-            }
-
-            Spacer(Modifier.width(10.dp))
-
-            if (match.type == "ARTIST") {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (match.isFollowing) ReonTokens.SoftContainer else ReonTokens.Primary)
-                        .clickable(onClick = onFollowToggle)
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = if (match.isFollowing) "Following" else "Follow",
-                        style = ReonTokens.LabelSmall.copy(
-                            color = if (match.isFollowing) ReonTokens.Primary else Color.White,
-                            fontWeight = FontWeight.Bold
+                        Text(
+                            text = "Best match",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = onSurfaceMuted,
+                            fontSize = 11.5.sp
                         )
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .shadow(6.dp, CircleShape, ambientColor = Color(0x330057FF), spotColor = Color(0x400057FF))
-                        .clip(CircleShape)
-                        .background(ReonTokens.Primary)
-                        .clickable(onClick = onPlayClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.PlayArrow,
-                        contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-            }
-        }
-    }
-}
+                    }
 
-@Composable
-private fun SearchTrackRow(
-    track: TrackItem,
-    onTrackSelect: (TrackItem) -> Unit,
-    isCurrentPlaying: Boolean,
-    onMoreClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onTrackSelect(track) }
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Track art / icon
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (isCurrentPlaying) ReonTokens.SoftContainer else ReonTokens.Muted),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isCurrentPlaying) Icons.Rounded.GraphicEq else Icons.Rounded.MusicNote,
-                contentDescription = null,
-                tint = if (isCurrentPlaying) ReonTokens.Primary else ReonTokens.TextTertiary,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+                    Spacer(Modifier.height(10.dp))
 
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = track.title,
-                style = ReonTokens.TitleMedium.copy(
-                    fontSize = 14.sp,
-                    color = if (isCurrentPlaying) ReonTokens.Primary else ReonTokens.TextPrimary
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(2.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (track.badge.isNotEmpty()) {
+                    // Top Result Bento Card
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(ReonTokens.SoftContainer)
-                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(cardBackground)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(16.dp))
+                            .clickable { onTrackSelect(topResultTrack) }
+                            .padding(14.dp)
                     ) {
-                        Text(
-                            text = track.badge,
-                            style = ReonTokens.LabelSmall.copy(
-                                color = ReonTokens.Primary,
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 60dp Artwork
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(surfaceHigh)
+                            ) {
+                                TrackArtImage(
+                                    url = getArtUrlForSeed(topResultTrack.artSeed),
+                                    contentDescription = topResultTrack.title,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            Spacer(Modifier.width(14.dp))
+
+                            // Metadata (SONG, Title, Artist · Single)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "SONG",
+                                    style = ReonTokens.LabelMono,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 1.sp,
+                                    color = onSurfaceMuted,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                Spacer(Modifier.height(2.dp))
+
+                                Text(
+                                    text = topResultTrack.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 16.sp
+                                )
+
+                                Spacer(Modifier.height(2.dp))
+
+                                Text(
+                                    text = "${topResultTrack.artist} • ${topResultTrack.album.ifEmpty { "Single" }}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = onSurfaceMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            // Actions: Heart & Solid Black Play FAB
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { onShowToast("Liked ${topResultTrack.title}") },
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.FavoriteBorder,
+                                        contentDescription = "Like",
+                                        tint = onSurfaceMuted,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(primaryColor)
+                                        .clickable { onTrackSelect(topResultTrack) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = onPrimaryColor,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 6. Search Results Tracklist Header & Items
+            item(key = "search_results_header") {
+                Text(
+                    text = if (state.searchQuery.isNotEmpty()) "Tracks" else "Explore Master Collection",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(
+                        start = ReonSpacing.margin,
+                        end = ReonSpacing.margin,
+                        top = 14.dp,
+                        bottom = 6.dp
+                    )
+                )
+            }
+
+            items(searchResults, key = { it.id }) { track ->
+                val isPlaying = state.currentTrack.id == track.id && state.currentTrack.isPlaying
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ReonSpacing.margin, vertical = 3.dp)
+                        .clip(RoundedCornerShape(ReonRadius.md))
+                        .background(if (isPlaying) surfaceHigh else cardBackground)
+                        .border(
+                            ReonSize.hairline,
+                            if (isPlaying) onSurface.copy(alpha = 0.2f) else hairlineColor,
+                            RoundedCornerShape(ReonRadius.md)
+                        )
+                        .clickable { onTrackSelect(track) }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(ReonRadius.sm))
+                    ) {
+                        TrackArtImage(
+                            url = getArtUrlForSeed(track.artSeed),
+                            contentDescription = track.title,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
-                    Spacer(Modifier.width(6.dp))
-                }
 
-                Text(
-                    text = "${track.artist} · ${track.album}",
-                    style = ReonTokens.BodySmall.copy(fontSize = 11.sp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+                    Spacer(Modifier.width(12.dp))
 
-        Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = track.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isPlaying) FontWeight.SemiBold else FontWeight.Medium,
+                            color = onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = track.artist,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = onSurfaceMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Text(
+                                text = " • ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = onSurfaceMuted
+                            )
+                            Text(
+                                text = track.duration,
+                                style = ReonTokens.LabelMono,
+                                fontSize = 10.sp,
+                                color = onSurfaceMuted
+                            )
+                        }
+                    }
 
-        Text(
-            text = track.duration,
-            style = ReonTokens.DurationText
-        )
+                    // Lossless FLAC Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(ReonRadius.xs))
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(ReonRadius.xs))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (track.badge.isNotEmpty()) track.badge else "FLAC",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 10.sp,
+                            color = onSurfaceMuted
+                        )
+                    }
 
-        Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(4.dp))
 
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(if (isCurrentPlaying) ReonTokens.Primary else ReonTokens.SoftContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = "Play",
-                tint = if (isCurrentPlaying) Color.White else ReonTokens.Primary,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(Modifier.width(4.dp))
-
-        IconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.MoreVert,
-                contentDescription = "Options",
-                tint = ReonTokens.TextTertiary,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchArtistRow(
-    artist: ArtistItem,
-    onFollowToggle: () -> Unit,
-    onArtistClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onArtistClick() }
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(ReonTokens.SoftContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Person,
-                contentDescription = null,
-                tint = ReonTokens.Primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = artist.name,
-                style = ReonTokens.TitleMedium.copy(fontSize = 14.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "Artist · ${artist.genre}",
-                style = ReonTokens.BodySmall.copy(fontSize = 11.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(if (artist.isFollowing) ReonTokens.SoftContainer else ReonTokens.Primary)
-                .clickable(onClick = onFollowToggle)
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-        ) {
-            Text(
-                text = if (artist.isFollowing) "Following" else "Follow",
-                style = ReonTokens.LabelSmall.copy(
-                    color = if (artist.isFollowing) ReonTokens.Primary else Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchAlbumRow(
-    album: AlbumItem,
-    onAlbumClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onAlbumClick)
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFFE8EEF8)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Album,
-                contentDescription = null,
-                tint = ReonTokens.Primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = album.title,
-                style = ReonTokens.TitleMedium.copy(fontSize = 14.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "Album · ${album.artist} · ${album.year}",
-                style = ReonTokens.BodySmall.copy(fontSize = 11.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Text(
-            text = album.trackCount,
-            style = ReonTokens.LabelSmall.copy(color = ReonTokens.TextTertiary)
-        )
-    }
-}
-
-@Composable
-private fun SearchPlaylistRow(
-    playlist: PlaylistItem,
-    onPlaylistClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onPlaylistClick)
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(ReonTokens.ElectricGradient),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.QueueMusic,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = playlist.title,
-                style = ReonTokens.TitleMedium.copy(fontSize = 14.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = playlist.subtitle,
-                style = ReonTokens.BodySmall.copy(fontSize = 11.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Text(
-            text = playlist.duration,
-            style = ReonTokens.DurationText
-        )
-    }
-}
-
-@Composable
-private fun VoiceSearchOverlay(
-    transcript: String,
-    onCancel: () -> Unit
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "voice_wave")
-    val waveScale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "voice_wave_scale"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xE60B1020))
-            .clickable(onClick = onCancel),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
-        ) {
-            Box(
-                modifier = Modifier.size(120.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Pulsing outer halo
-                Box(
-                    modifier = Modifier
-                        .size((100 * waveScale).dp)
-                        .clip(CircleShape)
-                        .background(ReonTokens.Primary.copy(alpha = 0.25f))
-                )
-
-                // Inner Mic Circle
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .shadow(16.dp, CircleShape, ambientColor = ReonTokens.Primary, spotColor = ReonTokens.Primary)
-                        .clip(CircleShape)
-                        .background(ReonTokens.Primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Mic,
-                        contentDescription = "Microphone",
-                        tint = Color.White,
+                    IconButton(
+                        onClick = { onShowToast("Options for ${track.title}") },
                         modifier = Modifier.size(36.dp)
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = "Options",
+                            tint = onSurfaceMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
-
-            Spacer(Modifier.height(32.dp))
-
-            Text(
-                text = transcript,
-                style = ReonTokens.HeadlineMedium.copy(
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "Say an artist, song title, or genre...",
-                style = ReonTokens.BodyMedium.copy(
-                    color = Color.White.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
-            )
-
-            Spacer(Modifier.height(36.dp))
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .clickable(onClick = onCancel)
-                    .padding(horizontal = 24.dp, vertical = 10.dp)
-            ) {
-                Text(
-                    text = "Cancel",
-                    style = ReonTokens.LabelMedium.copy(color = Color.White)
-                )
-            }
         }
+    }
+}
+
+private fun sampleSearchResults(): List<TrackItem> {
+    return listOf(
+        TrackItem("sr_1", "Midnight City Lights", "Solaris & Kaelen", "Single", "04:18", isLiked = true, isPlaying = true, artSeed = 1),
+        TrackItem("sr_2", "Nocturne Trance Sessions", "Nocturne", "Nocturne", "06:45", isLiked = false, artSeed = 2),
+        TrackItem("sr_3", "Refractions (Master Edit)", "Aurora Glow", "Refractions", "04:18", isLiked = true, artSeed = 3),
+        TrackItem("sr_4", "Monolith Sessions 002", "Monolith Archive", "Sessions", "07:12", isLiked = false, artSeed = 4),
+        TrackItem("sr_5", "Chill Electronica Waves", "REON Focus", "Chillout", "05:30", isLiked = true, artSeed = 5),
+        TrackItem("sr_6", "Nightcall (Neon Re-edit)", "Kavinsky", "OutRun", "04:45", isLiked = true, artSeed = 6)
+    )
+}
+
+private fun getArtUrlForSeed(seed: Int): String {
+    return when (seed % 6) {
+        1 -> "https://picsum.photos/seed/reon_refractions/300/300"
+        2 -> "https://picsum.photos/seed/reon_nightfall/300/300"
+        3 -> "https://picsum.photos/seed/reon_nightcall/300/300"
+        4 -> "https://picsum.photos/seed/reon_usb002/300/300"
+        5 -> "https://picsum.photos/seed/reon_chroma/300/300"
+        else -> "https://picsum.photos/seed/reon_theta/300/300"
     }
 }

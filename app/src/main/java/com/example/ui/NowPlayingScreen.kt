@@ -1,40 +1,23 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -51,40 +33,47 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Airplay
 import androidx.compose.material.icons.rounded.Album
-import androidx.compose.material.icons.rounded.Bedtime
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DensityMedium
+import androidx.compose.material.icons.rounded.Devices
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.FileDownloadDone
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PersonOutline
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
-import androidx.compose.material.icons.rounded.PlaylistPlay
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.Speaker
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -93,47 +82,39 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.MusicTrack
-import kotlinx.coroutines.delay
+import com.example.ui.components.TrackArtImage
+import com.example.ui.theme.reonExtras
 
 /**
- * Custom tactile press-bounce animation modifier.
- * Provides responsive scale-down, bouncy spring release, and Material ripple feedback on click.
+ * Tactile micro-bounce modifier
  */
 @Composable
-fun Modifier.bounceClick(
-    scaleDown: Float = 0.90f,
+fun Modifier.tactileClick(
+    scaleDown: Float = 0.94f,
     onClick: () -> Unit
 ): Modifier {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "button_bounce_scale"
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f),
+        label = "tactile_scale"
     )
     return this
         .graphicsLayer {
@@ -142,11 +123,23 @@ fun Modifier.bounceClick(
         }
         .clickable(
             interactionSource = interactionSource,
-            indication = ripple(bounded = true, color = Color.White.copy(alpha = 0.35f)),
+            indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
             onClick = onClick
         )
 }
 
+/**
+ * REON — Now Playing Screen
+ * Designed precisely to match the user's reference mockup:
+ * - Top header with "PLAYING FROM PLAYLIST" and playlist title
+ * - Full-width high-res album artwork with 20dp rounded corners and soft drop shadow
+ * - Track title, artist subtitle with "LOSSLESS 24-BIT" pill, and Heart & Bookmark icons
+ * - Clean linear scrubber bar with elapsed and remaining time codes
+ * - 5-button transport controls with 64dp solid primary Play/Pause button
+ * - "AirPlay / Speaker" device output pill with quick actions (Download, Queue, Share)
+ * - Synchronized lyrics preview card with "Full View" toggle
+ * - "Up Next" queue section with count pill, "View Queue" trigger, and stack of upcoming track cards
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NowPlayingScreen(
@@ -174,293 +167,583 @@ fun NowPlayingScreen(
     onExpandPlayer: () -> Unit = {},
     onDismissToast: () -> Unit = {}
 ) {
-    // Auto dismiss toast after 2.5 seconds
-    LaunchedEffect(state.toastMessage) {
-        if (state.toastMessage != null) {
-            delay(2500L)
-            onDismissToast()
+    val scrollState = rememberScrollState()
+
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    val isOled = MaterialTheme.reonExtras.isOled
+
+    var isLyricsFullView by remember { mutableStateOf(false) }
+
+    // Fallback sample Up Next tracks if queue is empty
+    val upNextTracks = remember(state.queueTracks) {
+        if (state.queueTracks.isNotEmpty()) {
+            state.queueTracks.filter { it.id != state.currentTrack.id }.take(3)
+        } else {
+            listOf(
+                MusicTrack(
+                    id = "up_next_1",
+                    title = "Neon Horizons",
+                    artist = "Aura Sound",
+                    album = "Late Night Resonance",
+                    durationMs = 314000L,
+                    albumArtUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80"
+                ),
+                MusicTrack(
+                    id = "up_next_2",
+                    title = "Subtle Echoes",
+                    artist = "Mirage Architecture",
+                    album = "Late Night Resonance",
+                    durationMs = 232000L,
+                    albumArtUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&q=80"
+                ),
+                MusicTrack(
+                    id = "up_next_3",
+                    title = "Crystalline Dispersion",
+                    artist = "Kaelen Solo Archive",
+                    album = "Late Night Resonance",
+                    durationMs = 287000L,
+                    albumArtUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80"
+                )
+            )
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF050811))
+            .background(MaterialTheme.colorScheme.background)
             .systemBarsPadding()
             .testTag("now_playing_screen")
     ) {
-        // Ambient Radial Glow Layer
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height * 0.32f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF0066FF).copy(alpha = 0.22f),
-                        Color(0xFF00F2FE).copy(alpha = 0.08f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = size.width * 0.85f
-                ),
-                center = center,
-                radius = size.width * 0.85f
-            )
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp)
+        ) {
+            // 1. Top Header (< Down Chevron | PLAYING FROM PLAYLIST / Late Night Resonance | More ... >)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Downward Dismiss Chevron
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .tactileClick(onClick = onBack)
+                        .testTag("back_button"),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.KeyboardArrowDown,
+                        contentDescription = "Dismiss",
+                        tint = onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
 
-        if (state.isMinimized) {
-            // Minimized View: Floating Interactive Mini Player docked above navigation
+                // Center Title
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "PLAYING FROM PLAYLIST",
+                        style = ReonTokens.LabelMono,
+                        color = onSurfaceMuted,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = if (state.album.isNotEmpty()) state.album else "Late Night Resonance",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // More Options Trigger
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .tactileClick(onClick = onMenuToggle)
+                        .testTag("menu_button"),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreHoriz,
+                        contentDescription = "More Options",
+                        tint = onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // 2. Large High-Res Artwork Card (Square with 20dp rounded corners & soft shadow)
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 16.dp),
-                contentAlignment = Alignment.BottomCenter
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .then(
+                        if (isOled) Modifier else Modifier.shadow(
+                            elevation = 14.dp,
+                            shape = RoundedCornerShape(20.dp),
+                            ambientColor = Color(0x18000000),
+                            spotColor = Color(0x28000000)
+                        )
+                    )
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(surfaceHigh)
             ) {
-                MiniPlayerBar(
-                    state = state,
-                    onExpand = onExpandPlayer,
-                    onPlayPause = onPlayPause,
-                    onNext = onNext
-                )
+                if (state.albumArtUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = state.albumArtUrl,
+                        contentDescription = state.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = state.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
-        } else {
-            // Full Scrollable Viewport Container
-            val scrollState = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .widthIn(max = 420.dp)
-                    .align(Alignment.TopCenter),
-                horizontalAlignment = Alignment.CenterHorizontally
+
+            Spacer(Modifier.height(24.dp))
+
+            // 3. Track Title, Artist, Lossless Badge & Heart / Bookmark Icons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Main Viewport (790dp target view height)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 22.dp, vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Top Bar Navigation
-                    ZenHeader(
-                        category = state.category,
-                        isMenuOpen = state.isMenuOpen,
-                        onBack = onBack,
-                        onMenuToggle = onMenuToggle
+                // Title & Subtitle
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = state.title.ifEmpty { "Midnight City Lights" },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 22.sp
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(4.dp))
 
-                    // Central Holographic Artwork & Synced Lyric Card
-                    ArtworkAndLyricsSection(
-                        track = state.currentTrack,
-                        isPlaying = state.isPlaying
-                    )
-
-                    Spacer(Modifier.height(20.dp))
-
-                    // Track Identity & Action Controls
-                    TrackIdentityRow(
-                        title = state.title,
-                        artist = state.artist,
-                        isLiked = state.isLiked,
-                        onLike = onLike,
-                        onPlaylistClick = onPlaylistClick
-                    )
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Scrubbing Progress Bar Component
-                    ScrubberProgressBar(
-                        progress = state.progress,
-                        positionLabel = state.positionLabel,
-                        remainingLabel = state.remainingLabel,
-                        onSeek = onSeek
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Master Audio Transport Controls
-                    MasterTransportRow(
-                        isPlaying = state.isPlaying,
-                        repeatOn = state.repeatOn,
-                        onDownload = onDownload,
-                        onPrevious = onPrevious,
-                        onPlayPause = onPlayPause,
-                        onNext = onNext,
-                        onRepeat = onRepeat
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Bottom Quick Dock Navigation Pills
-                    QuickDockNavigationRow(
-                        sleepTimer = state.sleepTimer,
-                        onQueueClick = onQueueClick,
-                        onSleepTimerClick = onSleepTimerClick
-                    )
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Scroll Down Cue Indicator
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clickable { }
-                            .padding(vertical = 4.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "SCROLL FOR DETAILS & ARTIST",
-                            color = Color.White.copy(alpha = 0.50f),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 2.4.sp
+                            text = state.artist.ifEmpty { "Solaris & Kaelen" },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onSurfaceMuted,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(Modifier.height(4.dp))
-                        Icon(
-                            imageVector = Icons.Rounded.KeyboardArrowDown,
-                            contentDescription = "Scroll down",
-                            tint = Color(0xFF38BDF8).copy(alpha = 0.8f),
-                            modifier = Modifier.size(18.dp)
+
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onSurfaceMuted,
+                            fontSize = 14.sp
                         )
+
+                        // LOSSLESS 24-BIT Pill
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(surfaceHigh)
+                                .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "LOSSLESS 24-BIT",
+                                style = ReonTokens.LabelMono,
+                                color = onSurface,
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                // Extended Vertical Content Sections (Up Next, Artist, Song Details, Audio Specs)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 22.dp)
-                        .padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                // Heart Like & Bookmark Actions
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // 1. Up Next / Queue Preview Card
-                    UpNextSectionCard(
-                        nextTrack = state.nextTrack,
-                        onQueueClick = onQueueClick
-                    )
+                    IconButton(
+                        onClick = onLike,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (state.isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
-                    // 2. About the Artist Card
-                    AboutArtistCard(
-                        artistName = state.artist,
-                        listeners = state.currentTrack.monthlyListeners,
-                        onFollow = { onShareTrack() }
-                    )
+                    IconButton(
+                        onClick = onPlaylistClick,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.BookmarkBorder,
+                            contentDescription = "Save / Playlist",
+                            tint = onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
 
-                    // 3. Song Details & Credits Card
-                    SongDetailsCard(
-                        album = state.album,
-                        isrc = "US-RE8-24-00142"
-                    )
+            Spacer(Modifier.height(18.dp))
 
-                    // 4. Audio & Stream Quality Specs Card
-                    AudioQualitySpecsCard(
-                        codec = state.codec,
-                        sampleRate = state.sampleRate,
-                        source = state.source
+            // 4. Interactive Scrubber / Seek Bar
+            LinearScrubberBar(
+                progress = state.progress,
+                onSeek = onSeek,
+                elapsedText = state.positionLabel.ifEmpty { "1:45" },
+                remainingText = state.remainingLabel.ifEmpty { "-2:33" }
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            // 5. Main Playback Controls Row (Shuffle, Previous, 64dp Solid Play/Pause, Next, Repeat)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Shuffle Button
+                IconButton(
+                    onClick = onShuffle,
+                    modifier = Modifier.size(48.dp).testTag("shuffle_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Shuffle,
+                        contentDescription = "Shuffle",
+                        tint = if (state.shuffleOn) onSurface else onSurfaceMuted,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Previous Button
+                IconButton(
+                    onClick = onPrevious,
+                    modifier = Modifier.size(48.dp).testTag("previous_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                // Play / Pause Button (64dp solid rounded-square)
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .then(
+                            if (isOled) Modifier else Modifier.shadow(
+                                elevation = 8.dp,
+                                shape = RoundedCornerShape(20.dp),
+                                ambientColor = Color(0x18000000),
+                                spotColor = Color(0x24000000)
+                            )
+                        )
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(primaryColor)
+                        .tactileClick(scaleDown = 0.92f, onClick = onPlayPause)
+                        .testTag("play_pause_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        tint = onPrimaryColor,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Next Button
+                IconButton(
+                    onClick = onNext,
+                    modifier = Modifier.size(48.dp).testTag("next_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SkipNext,
+                        contentDescription = "Next",
+                        tint = onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                // Repeat Button
+                IconButton(
+                    onClick = onRepeat,
+                    modifier = Modifier.size(48.dp).testTag("repeat_button")
+                ) {
+                    Icon(
+                        imageVector = if (state.repeatOn) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
+                        contentDescription = "Repeat",
+                        tint = if (state.repeatOn) onSurface else onSurfaceMuted,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-        }
 
-        // Clean Dim Backdrop Overlay for Active Options Bottom Sheet
-        AnimatedVisibility(
-            visible = state.isMenuOpen,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150))
-        ) {
+            Spacer(Modifier.height(20.dp))
+
+            // 6. Device Output & Utility Bar (AirPlay / Speaker + Download, Queue, Share)
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF02040A).copy(alpha = 0.70f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onMenuClose
-                    )
-            )
-        }
-
-        // Three Dots Modal Options Bottom Sheet
-        AnimatedVisibility(
-            visible = state.isMenuOpen,
-            enter = slideInVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                initialOffsetY = { it }
-            ) + fadeIn(tween(180)),
-            exit = slideOutVertically(
-                animationSpec = tween(180),
-                targetOffsetY = { it }
-            ) + fadeOut(tween(140)),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            ZenOptionsBottomSheet(
-                state = state,
-                onAddToPlaylist = onPlaylistClick,
-                onViewAlbum = onViewAlbum,
-                onGoToArtist = onViewAlbum,
-                onSleepTimerClick = onSleepTimerClick,
-                onShare = onShareTrack,
-                onClose = onMenuClose
-            )
-        }
-
-        // Interactive Toast Notification
-        AnimatedVisibility(
-            visible = state.toastMessage != null,
-            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 18.dp)
-        ) {
-            state.toastMessage?.let { msg ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFF0C1326).copy(alpha = 0.96f))
-                        .border(1.dp, Color(0xFF22D3EE).copy(alpha = 0.45f), RoundedCornerShape(50))
-                        .shadow(12.dp, RoundedCornerShape(50), ambientColor = Color.Black, spotColor = Color(0x6600C8FF))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(bounded = true, color = Color.White),
-                            onClick = onDismissToast
-                        )
-                        .padding(horizontal = 18.dp, vertical = 10.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(cardBackground)
+                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Left: Device selector
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { onSleepTimerClick() }
+                    ) {
                         Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = "Success",
-                            tint = Color(0xFF22D3EE),
-                            modifier = Modifier.size(16.dp)
+                            imageVector = Icons.Rounded.Airplay,
+                            contentDescription = "Output device",
+                            tint = onSurface,
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = msg,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            text = state.audioOutputDevice.ifEmpty { "AirPlay / Speaker" },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            color = onSurface
+                        )
+                    }
+
+                    // Right: Actions (Download, Queue, Share)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Download
+                        Icon(
+                            imageVector = if (state.isDownloaded) Icons.Rounded.FileDownloadDone else Icons.Rounded.Download,
+                            contentDescription = "Download",
+                            tint = onSurface,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { onDownload() }
+                        )
+
+                        // Queue
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
+                            contentDescription = "Queue",
+                            tint = onSurface,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { onQueueClick() }
+                        )
+
+                        // Share
+                        Icon(
+                            imageVector = Icons.Rounded.IosShare,
+                            contentDescription = "Share",
+                            tint = onSurface,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { onShareTrack() }
                         )
                     }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            // 7. Lyrics Card with "Full View" toggle
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(cardBackground)
+                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "LYRICS",
+                            style = ReonTokens.LabelMono,
+                            color = onSurfaceMuted,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Text(
+                            text = if (isLyricsFullView) "Collapse" else "Full View",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onSurface,
+                            modifier = Modifier.clickable { isLyricsFullView = !isLyricsFullView }
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    if (!isLyricsFullView) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Static humming across the skyline",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = onSurfaceMuted,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Reflections shatter on the obsidian glass",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Synchronized pulses through the dark",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = onSurfaceMuted,
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = "Static humming across the skyline", style = MaterialTheme.typography.bodyMedium, color = onSurfaceMuted, fontSize = 14.sp)
+                            Text(text = "Reflections shatter on the obsidian glass", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = onSurface, fontSize = 15.sp)
+                            Text(text = "Synchronized pulses through the dark", style = MaterialTheme.typography.bodyMedium, color = onSurfaceMuted, fontSize = 14.sp)
+                            Text(text = "Deep frequencies resonate in timeless space", style = MaterialTheme.typography.bodyMedium, color = onSurfaceMuted, fontSize = 14.sp)
+                            Text(text = "Pure lossless waves bridging the divide", style = MaterialTheme.typography.bodyMedium, color = onSurfaceMuted, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // 8. Up Next Section (Header + Stack of Cards)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Up Next",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = onSurface,
+                        fontSize = 17.sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(surfaceHigh)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${upNextTracks.size}",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onSurfaceMuted
+                        )
+                    }
+                }
+
+                Text(
+                    text = "View Queue",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = onSurface,
+                    modifier = Modifier.clickable { onQueueClick() }
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Up Next Cards Stack
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                upNextTracks.forEach { track ->
+                    UpNextTrackCard(
+                        track = track,
+                        onClick = { onTrackSelect(track) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(36.dp))
         }
+
+        // --- Modals & Sheets ---
 
         // Queue Modal Bottom Sheet
         if (state.isQueueExpanded) {
-            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val queueSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             ModalBottomSheet(
                 onDismissRequest = onQueueClick,
-                sheetState = sheetState,
-                containerColor = Color(0xFF090D22)
+                sheetState = queueSheetState,
+                shape = RoundedCornerShape(topStart = ReonRadius.sheet, topEnd = ReonRadius.sheet),
+                containerColor = cardBackground,
+                dragHandle = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(32.dp)
+                                .height(4.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.outline)
+                        )
+                    }
+                }
             ) {
-                QueueModalContent(
+                QueueModalSheetContent(
                     state = state,
                     onTrackSelect = { track ->
                         onTrackSelect(track)
@@ -477,9 +760,26 @@ fun NowPlayingScreen(
             ModalBottomSheet(
                 onDismissRequest = onPlaylistClick,
                 sheetState = playlistSheetState,
-                containerColor = Color(0xFF090D22)
+                shape = RoundedCornerShape(topStart = ReonRadius.sheet, topEnd = ReonRadius.sheet),
+                containerColor = cardBackground,
+                dragHandle = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(32.dp)
+                                .height(4.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.outline)
+                        )
+                    }
+                }
             ) {
-                PlaylistModalContent(
+                PlaylistModalSheetContent(
                     trackTitle = state.title,
                     onSelectPlaylist = { playlistName ->
                         onAddToPlaylist(playlistName)
@@ -488,1380 +788,438 @@ fun NowPlayingScreen(
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun ZenHeader(
-    category: String,
-    isMenuOpen: Boolean = false,
-    onBack: () -> Unit,
-    onMenuToggle: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Dismiss Modal Chevron Icon (w-10 h-10 rounded-full bg-white/[0.05] border border-white/10)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.05f))
-                .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
-                .bounceClick(scaleDown = 0.90f, onClick = onBack)
-                .testTag("back_button"),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = "Dismiss view",
-                tint = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.size(22.dp)
-            )
-        }
-
-        // Center Title & Category Context
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = category.uppercase(),
-                color = Color.White.copy(alpha = 0.50f),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 2.4.sp
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "Now Playing",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.4.sp
-            )
-        }
-
-        // Context Menu Button (w-10 h-10 rounded-full bg-white/[0.05] border border-white/10)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(if (isMenuOpen) Color(0xFF0066FF).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
-                .border(1.dp, if (isMenuOpen) Color(0xFF00F2FE).copy(alpha = 0.40f) else Color.White.copy(alpha = 0.10f), CircleShape)
-                .bounceClick(scaleDown = 0.90f, onClick = onMenuToggle)
-                .testTag("menu_button"),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.MoreHoriz,
-                contentDescription = "More options",
-                tint = if (isMenuOpen) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ArtworkAndLyricsSection(
-    track: MusicTrack,
-    isPlaying: Boolean
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "halo_anim")
-    val haloPulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.65f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "halo_pulse"
-    )
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // Concentric Holographic Orbital Disc (w-64 h-64 equivalent)
-        Box(
-            modifier = Modifier
-                .size(256.dp)
-                .padding(4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Outer soft boundary ring
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .border(1.dp, Color(0xFF0066FF).copy(alpha = if (isPlaying) haloPulseAlpha * 0.4f else 0.2f), CircleShape)
-            )
-            // Inner subtle accent ring
-            Box(
-                modifier = Modifier
-                    .size(236.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, Color(0xFF00F2FE).copy(alpha = 0.20f), CircleShape)
-            )
-
-            // Central Holographic Artwork Disk (w-56 h-56 / 224.dp)
-            Box(
-                modifier = Modifier
-                    .size(224.dp)
-                    .shadow(
-                        elevation = 24.dp,
-                        shape = CircleShape,
-                        ambientColor = Color(0xFF008CFF),
-                        spotColor = Color(0xFF38BDF8)
-                    )
-                    .clip(CircleShape)
-                    .border(1.2.dp, Color(0xFF00F2FE).copy(alpha = 0.35f), CircleShape)
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.art_refractions),
-                    contentDescription = "Aurora Glow - Refractions Crystalline Sculpture Artwork",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Translucent glass reflection sheen overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color(0xFF00F2FE).copy(alpha = 0.10f),
-                                    Color.Transparent
-                                ),
-                                start = Offset(0f, 0f),
-                                end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                            )
-                        )
-                )
-
-                // Bottom subtle artist vignette watermark overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.40f),
-                                    Color.Black.copy(alpha = 0.85f)
-                                )
-                            )
-                        )
-                        .padding(bottom = 14.dp, top = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "AURORA GLOW",
-                            color = Color.White.copy(alpha = 0.90f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.0.sp
-                        )
-                        Spacer(Modifier.height(1.dp))
-                        Text(
-                            text = "REFRACTIONS",
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 7.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 2.5.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // Synced Lyrics Mood Callout Box
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF0B101D).copy(alpha = 0.85f))
-                .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(20.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Synced Lyrics Badge Pill
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFF082F49).copy(alpha = 0.9f))
-                        .border(1.dp, Color(0xFF00F2FE).copy(alpha = 0.35f), RoundedCornerShape(50))
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Options Context Menu Bottom Sheet (matching reference UI)
+        if (state.isMenuOpen) {
+            val menuSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            ModalBottomSheet(
+                onDismissRequest = onMenuClose,
+                sheetState = menuSheetState,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                containerColor = cardBackground,
+                dragHandle = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp, bottom = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
+                                .width(36.dp)
+                                .height(4.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF38BDF8))
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "SYNCED LYRICS",
-                            color = Color(0xFF7DD3FC),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.2.sp
+                                .background(MaterialTheme.colorScheme.outlineVariant)
                         )
                     }
                 }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 24.dp)
+                ) {
+                    // Track Header Row (Artwork + Title + Artist)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(surfaceHigh)
+                        ) {
+                            if (state.albumArtUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = state.albumArtUrl,
+                                    contentDescription = state.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(R.drawable.art_refractions),
+                                    contentDescription = state.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
 
-                // Lyrics Lines
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Floating through shards of electric light",
-                        color = Color.White.copy(alpha = 0.55f),
-                        fontSize = 11.sp,
-                        fontStyle = FontStyle.Italic,
-                        fontWeight = FontWeight.Light,
-                        textAlign = TextAlign.Center
+                        Spacer(Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = state.title.ifEmpty { "Midnight City Lights" },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 15.sp
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = state.artist.ifEmpty { "Solaris & Kaelen" },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = onSurfaceMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(
+                        thickness = ReonSize.hairline,
+                        color = hairlineColor,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = "“Caught in the frequency of the night”",
-                        color = Color(0xFFCFFAFE),
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.shadow(8.dp, spotColor = Color(0xFF38BDF8))
+
+                    // 1. Play Next
+                    OptionsSheetRowItem(
+                        icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                        title = "Play Next",
+                        onClick = {
+                            onMenuClose()
+                            onPlayNextMenu()
+                        }
                     )
+
+                    // 2. Add to Queue
+                    OptionsSheetRowItem(
+                        icon = Icons.AutoMirrored.Rounded.QueueMusic,
+                        title = "Add to Queue",
+                        onClick = {
+                            onMenuClose()
+                            onAddToQueue()
+                        }
+                    )
+
+                    // 3. View Album
+                    OptionsSheetRowItem(
+                        icon = Icons.Rounded.Album,
+                        title = "View Album",
+                        onClick = {
+                            onMenuClose()
+                            onViewAlbum()
+                        }
+                    )
+
+                    // 4. Go to Artist
+                    OptionsSheetRowItem(
+                        icon = Icons.Rounded.PersonOutline,
+                        title = "Go to Artist",
+                        onClick = {
+                            onMenuClose()
+                            onViewAlbum() // Navigates to artist/album context
+                        }
+                    )
+
+                    // 5. Share Track
+                    OptionsSheetRowItem(
+                        icon = Icons.Rounded.IosShare,
+                        title = "Share Track",
+                        onClick = {
+                            onMenuClose()
+                            onShareTrack()
+                        }
+                    )
+
+                    // 6. Track Details
+                    OptionsSheetRowItem(
+                        icon = Icons.Rounded.Info,
+                        title = "Track Details",
+                        onClick = {
+                            onMenuClose()
+                            onDownload()
+                        }
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Full-width "Close" Button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(surfaceHigh)
+                            .clickable(onClick = onMenuClose),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Close",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onSurface,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * Clean Scrubber Bar with Solid Black Progress Line, Circular Drag Thumb, and Monospace Time Stamps
+ */
 @Composable
-private fun TrackIdentityRow(
-    title: String,
-    artist: String,
-    isLiked: Boolean,
-    onLike: () -> Unit,
-    onPlaylistClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Track Title & Artist
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.4).sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = artist,
-                color = Color.White.copy(alpha = 0.60f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.2.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        // Action Buttons: Add + Favorite
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Add to Collection Button
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF0B101D).copy(alpha = 0.85f))
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
-                    .bounceClick(scaleDown = 0.90f, onClick = onPlaylistClick)
-                    .testTag("add_playlist_button"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "Add to collection",
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            // Favorite Button (Heart)
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(if (isLiked) Color(0xFFF43F5E).copy(alpha = 0.20f) else Color(0xFF0B101D).copy(alpha = 0.85f))
-                    .border(1.dp, if (isLiked) Color(0xFFF43F5E).copy(alpha = 0.45f) else Color.White.copy(alpha = 0.12f), CircleShape)
-                    .shadow(
-                        elevation = if (isLiked) 12.dp else 0.dp,
-                        shape = CircleShape,
-                        spotColor = Color(0xFFF43F5E)
-                    )
-                    .bounceClick(scaleDown = 0.88f, onClick = onLike)
-                    .testTag("fav_button"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                    contentDescription = "Mark as favorite",
-                    tint = if (isLiked) Color(0xFFF43F5E) else Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ScrubberProgressBar(
+private fun LinearScrubberBar(
     progress: Float,
-    positionLabel: String,
-    remainingLabel: String,
-    onSeek: (Float) -> Unit
+    onSeek: (Float) -> Unit,
+    elapsedText: String,
+    remainingText: String
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val trackBg = MaterialTheme.colorScheme.surfaceContainerHigh
+    val isOled = MaterialTheme.reonExtras.isOled
+
     var isDragging by remember { mutableStateOf(false) }
-    var dragFraction by remember { mutableFloatStateOf(progress) }
-    val activeFraction = if (isDragging) dragFraction else progress
+    var dragProgress by remember { mutableFloatStateOf(progress) }
+
+    val currentProgress = if (isDragging) dragProgress else progress.coerceIn(0f, 1f)
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp)
+                .height(24.dp)
                 .pointerInput(Unit) {
-                    detectDragGestures(
+                    detectTapGestures { offset ->
+                        val newProgress = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
+                        onSeek(newProgress)
+                    }
+                }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             isDragging = true
-                            val frac = (offset.x / size.width).coerceIn(0f, 1f)
-                            dragFraction = frac
-                            onSeek(frac)
+                            dragProgress = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
                         },
                         onDragEnd = {
                             isDragging = false
-                            onSeek(dragFraction)
+                            onSeek(dragProgress)
                         },
-                        onDragCancel = { isDragging = false },
-                        onDrag = { change, _ ->
-                            change.consume()
-                            val frac = (change.position.x / size.width).coerceIn(0f, 1f)
-                            dragFraction = frac
-                            onSeek(frac)
+                        onDragCancel = {
+                            isDragging = false
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            val width = size.width.toFloat()
+                            if (width > 0) {
+                                dragProgress = (dragProgress + dragAmount / width).coerceIn(0f, 1f)
+                            }
                         }
                     )
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            val frac = (offset.x / size.width).coerceIn(0f, 1f)
-                            onSeek(frac)
-                        }
-                    )
-                }
-                .testTag("progress_container"),
+                },
             contentAlignment = Alignment.CenterStart
         ) {
-            Canvas(modifier = Modifier.fillMaxWidth().height(12.dp)) {
-                val railHeight = 4.dp.toPx()
-                val centerY = size.height / 2f
+            val fullWidth = maxWidth
 
-                // Inactive Rail
-                drawRoundRect(
-                    color = Color(0xFF1E293B).copy(alpha = 0.9f),
-                    topLeft = Offset(0f, centerY - railHeight / 2f),
-                    size = androidx.compose.ui.geometry.Size(size.width, railHeight),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(railHeight / 2f, railHeight / 2f)
-                )
+            // Background Unplayed Track (4dp height)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(trackBg)
+            )
 
-                // Active Gradient Rail
-                val activeWidth = size.width * activeFraction
-                if (activeWidth > 0f) {
-                    drawRoundRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF2563EB),
-                                Color(0xFF00F2FE),
-                                Color(0xFF38BDF8)
-                            )
-                        ),
-                        topLeft = Offset(0f, centerY - railHeight / 2f),
-                        size = androidx.compose.ui.geometry.Size(activeWidth, railHeight),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(railHeight / 2f, railHeight / 2f)
+            // Foreground Played Track (4dp height)
+            Box(
+                modifier = Modifier
+                    .width(fullWidth * currentProgress)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(onSurface)
+            )
+
+            // Draggable Solid Black Thumb
+            val thumbOffset = (fullWidth * currentProgress) - 7.dp
+            Box(
+                modifier = Modifier
+                    .offset(x = thumbOffset.coerceAtLeast(0.dp))
+                    .size(14.dp)
+                    .then(
+                        if (isOled) Modifier else Modifier.shadow(
+                            elevation = 3.dp,
+                            shape = CircleShape,
+                            ambientColor = Color(0x20000000),
+                            spotColor = Color(0x30000000)
+                        )
                     )
-                }
-
-                // Scrubber Thumb Glow + Circle
-                val thumbX = activeWidth.coerceIn(0f, size.width)
-                drawCircle(
-                    color = Color(0xFF38BDF8).copy(alpha = 0.40f),
-                    radius = 8.dp.toPx(),
-                    center = Offset(thumbX, centerY)
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = 5.5.dp.toPx(),
-                    center = Offset(thumbX, centerY)
-                )
-            }
+                    .clip(CircleShape)
+                    .background(onSurface)
+            )
         }
 
-        // Timestamp Readouts
+        // Time Stamps (Elapsed on left, Negative Remaining on right)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = positionLabel,
-                color = Color.White.copy(alpha = 0.55f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = remainingLabel,
-                color = Color(0xFF38BDF8).copy(alpha = 0.90f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun MasterTransportRow(
-    isPlaying: Boolean,
-    repeatOn: Boolean,
-    onDownload: () -> Unit,
-    onPrevious: () -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    onRepeat: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Download Toggle Button
-        IconButton(
-            onClick = onDownload,
-            modifier = Modifier.testTag("download_button")
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Download,
-                contentDescription = "Download for offline",
-                tint = Color.White.copy(alpha = 0.60f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-
-        // Previous Track
-        IconButton(
-            onClick = onPrevious,
-            modifier = Modifier.testTag("previous_button")
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.SkipPrevious,
-                contentDescription = "Previous track",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-
-        // Glowing Circular Master Play/Pause Button (w-16 h-16 / 64.dp)
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .shadow(
-                    elevation = 20.dp,
-                    shape = CircleShape,
-                    ambientColor = Color(0xFF0066FF),
-                    spotColor = Color(0xFF00F2FE)
-                )
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1E293B),
-                            Color(0xFF0F172A)
-                        )
-                    )
-                )
-                .border(1.dp, Color.White.copy(alpha = 0.20f), CircleShape)
-                .bounceClick(scaleDown = 0.92f, onClick = onPlayPause)
-                .testTag("zen_play_btn"),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (isPlaying) "Pause playback" else "Play playback",
-                tint = Color.White,
-                modifier = Modifier.size(30.dp)
-            )
-        }
-
-        // Next Track
-        IconButton(
-            onClick = onNext,
-            modifier = Modifier.testTag("next_button")
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.SkipNext,
-                contentDescription = "Next track",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-
-        // Repeat / Shuffle Toggle
-        IconButton(
-            onClick = onRepeat,
-            modifier = Modifier.testTag("repeat_button")
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Repeat,
-                contentDescription = "Repeat track",
-                tint = if (repeatOn) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.60f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun QuickDockNavigationRow(
-    sleepTimer: String,
-    onQueueClick: () -> Unit,
-    onSleepTimerClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left Pill: Queue + Badge 24
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFF0B101D).copy(alpha = 0.90f))
-                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
-                .bounceClick(scaleDown = 0.94f, onClick = onQueueClick)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .testTag("queue_pill")
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.QueueMusic,
-                    contentDescription = null,
-                    tint = Color(0xFF38BDF8),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Queue",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.width(8.dp))
-                // Badge 24
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFF082F49))
-                        .border(1.dp, Color(0xFF00F2FE).copy(alpha = 0.40f), RoundedCornerShape(50))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "24",
-                        color = Color(0xFF7DD3FC),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // Right Pill: Sleep Timer
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFF0B101D).copy(alpha = 0.90f))
-                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
-                .bounceClick(scaleDown = 0.94f, onClick = onSleepTimerClick)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .testTag("sleep_timer_pill")
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Bedtime,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = sleepTimer,
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UpNextSectionCard(
-    nextTrack: MusicTrack,
-    onQueueClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xFF0B101D).copy(alpha = 0.80f))
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "UP NEXT",
-                    color = Color.White.copy(alpha = 0.50f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.4.sp
-                )
-                Text(
-                    text = "View Queue (24)",
-                    color = Color(0xFF38BDF8),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable { onQueueClick() }
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onQueueClick() },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF1E293B)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.art_refractions),
-                            contentDescription = "Prism Dreams artwork preview",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFF0B101D).copy(alpha = 0.4f))
-                        )
-                    }
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = nextTrack.title.ifEmpty { "Prism Dreams" },
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = "${nextTrack.artist.ifEmpty { "Aurora Glow" }} • Refractions EP",
-                            color = Color.White.copy(alpha = 0.55f),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Text(
-                    text = "03:42",
-                    color = Color.White.copy(alpha = 0.50f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AboutArtistCard(
-    artistName: String,
-    listeners: String,
-    onFollow: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A).copy(alpha = 0.90f),
-                        Color(0xFF0B101D)
-                    )
-                )
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(24.dp))
-            .padding(20.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // Artist Portrait Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(18.dp))
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.art_refractions),
-                    contentDescription = "Aurora Glow Portrait",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color(0xFF0B101D).copy(alpha = 0.5f),
-                                    Color(0xFF0B101D).copy(alpha = 0.95f)
-                                )
-                            )
-                        )
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomStart)
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = artistName,
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Rounded.Verified,
-                                contentDescription = "Verified artist",
-                                tint = Color(0xFF38BDF8),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "1.4M Monthly Listeners",
-                            color = Color.White.copy(alpha = 0.80f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(Color(0xFF0066FF))
-                            .clickable { onFollow() }
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Text(
-                            text = "Follow",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            // Bio
-            Text(
-                text = "Pioneering electronic duo blending ambient modular synthesizers with crystalline acoustic textures and deep spatial soundscapes.",
-                color = Color.White.copy(alpha = 0.75f),
+                text = elapsedText,
+                style = ReonTokens.LabelMono,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Light,
-                lineHeight = 18.sp
+                color = onSurface
             )
 
-            // Sub row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Based in Berlin, Germany",
-                    color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 12.sp
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { }
-                ) {
-                    Text(
-                        text = "View Profile",
-                        color = Color(0xFF38BDF8),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(Modifier.width(2.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
+            Text(
+                text = remainingText,
+                style = ReonTokens.LabelMono,
+                fontSize = 12.sp,
+                color = onSurfaceMuted
+            )
         }
     }
 }
 
+/**
+ * Up Next Track Card
+ */
 @Composable
-private fun SongDetailsCard(
-    album: String,
-    isrc: String
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF0B101D).copy(alpha = 0.80f))
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(24.dp))
-            .padding(20.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "SONG DETAILS & CREDITS",
-                    color = Color.White.copy(alpha = 0.80f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.0.sp
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF082F49))
-                        .border(1.dp, Color(0xFF00F2FE).copy(alpha = 0.30f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = isrc,
-                        color = Color(0xFF38BDF8),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            val credits = listOf(
-                "Album" to "$album EP",
-                "Release Date" to "October 24, 2024",
-                "Written by" to "Aurora Glow, Elena Vance",
-                "Produced by" to "Aurora Glow",
-                "Mixed & Mastered" to "Cortex Spatial Labs, Berlin",
-                "Record Label" to "Horizon Electric Recordings"
-            )
-
-            credits.forEach { (label, value) ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = label,
-                        color = Color.White.copy(alpha = 0.45f),
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        text = value,
-                        color = Color.White.copy(alpha = 0.90f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AudioQualitySpecsCard(
-    codec: String,
-    sampleRate: String,
-    source: String
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF0B101D).copy(alpha = 0.80f))
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(24.dp))
-            .padding(20.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF38BDF8))
-                )
-                Text(
-                    text = "AUDIO & STREAM INFO",
-                    color = Color.White.copy(alpha = 0.80f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.0.sp
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Format Box
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF1E293B).copy(alpha = 0.6f))
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
-                        .padding(12.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = "FORMAT",
-                            color = Color.White.copy(alpha = 0.45f),
-                            fontSize = 10.sp,
-                            letterSpacing = 1.0.sp
-                        )
-                        Text(
-                            text = "Lossless ($codec)",
-                            color = Color(0xFF7DD3FC),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Sample Rate Box
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF1E293B).copy(alpha = 0.6f))
-                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
-                        .padding(12.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = "SAMPLE RATE",
-                            color = Color.White.copy(alpha = 0.45f),
-                            fontSize = 10.sp,
-                            letterSpacing = 1.0.sp
-                        )
-                        Text(
-                            text = sampleRate.ifEmpty { "96 kHz / 24-bit" },
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Streaming via",
-                    color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = "Bit-Perfect Direct DAC",
-                    color = Color.White.copy(alpha = 0.90f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ZenOptionsBottomSheet(
-    state: NowPlayingState,
-    onAddToPlaylist: () -> Unit,
-    onViewAlbum: () -> Unit,
-    onGoToArtist: () -> Unit,
-    onSleepTimerClick: () -> Unit,
-    onShare: () -> Unit,
-    onClose: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-            .background(Color(0xFF070B16))
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.16f),
-                        Color.Transparent
-                    )
-                ),
-                RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-            )
-            .padding(horizontal = 22.dp, vertical = 12.dp)
-            .testTag("three_dots_bottom_sheet")
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Drag Handle Bar
-            Box(
-                modifier = Modifier
-                    .width(38.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.25f))
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            // Track Artwork + Title + Artist Header Row & Close Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF131B2E))
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.art_refractions),
-                            contentDescription = state.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    Spacer(Modifier.width(14.dp))
-
-                    Column {
-                        Text(
-                            text = state.title.ifEmpty { "Refractions" },
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = state.artist.ifEmpty { "Aurora Glow" },
-                            fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.60f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // Close X Circle Button
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF162036))
-                        .clickable { onClose() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Close",
-                        tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            // Hairline Divider
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            // Menu Items List matching reference UI
-            // 1. Add to Playlist
-            BottomSheetOptionItem(
-                icon = Icons.Rounded.Add,
-                title = "Add to Playlist",
-                onClick = {
-                    onClose()
-                    onAddToPlaylist()
-                }
-            )
-
-            // 2. View Album
-            BottomSheetOptionItem(
-                icon = Icons.Rounded.Album,
-                title = "View Album",
-                onClick = {
-                    onClose()
-                    onViewAlbum()
-                }
-            )
-
-            // 3. Go to Artist
-            BottomSheetOptionItem(
-                icon = Icons.Rounded.Person,
-                title = "Go to Artist",
-                onClick = {
-                    onClose()
-                    onGoToArtist()
-                }
-            )
-
-            // 4. Sleep Timer
-            BottomSheetOptionItem(
-                icon = Icons.Rounded.Bedtime,
-                title = "Sleep Timer",
-                badgeContent = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF13283E))
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = state.sleepTimer.replace("m", "").trim().ifEmpty { "45" },
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF22D3EE)
-                        )
-                        Text(
-                            text = "m",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF22D3EE)
-                        )
-                    }
-                },
-                onClick = onSleepTimerClick
-            )
-
-            // 5. Share Track
-            BottomSheetOptionItem(
-                icon = Icons.Rounded.Share,
-                title = "Share Track",
-                onClick = {
-                    onClose()
-                    onShare()
-                }
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            // Done Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF111827))
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                    .clickable { onClose() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Done",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-        }
-    }
-}
-
-@Composable
-private fun BottomSheetOptionItem(
-    icon: ImageVector,
-    title: String,
-    badgeContent: (@Composable () -> Unit)? = null,
+private fun UpNextTrackCard(
+    track: MusicTrack,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val bg by animateColorAsState(
-        targetValue = if (isPressed) Color.White.copy(alpha = 0.08f) else Color.Transparent,
-        label = "option_press_bg"
-    )
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(bg)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(horizontal = 6.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(12.dp))
+            .background(cardBackground)
+            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(10.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // 44dp Artwork
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF131B2E)),
-                contentAlignment = Alignment.Center
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                if (track.albumArtUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = track.albumArtUrl,
+                        contentDescription = track.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = track.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            // Track info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = track.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = track.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 12.sp
                 )
             }
 
-            Spacer(Modifier.width(16.dp))
-
+            // Duration
             Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                text = track.durationLabel,
+                style = ReonTokens.LabelMono,
+                color = onSurfaceMuted,
+                fontSize = 12.sp
             )
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            badgeContent?.invoke()
+            Spacer(Modifier.width(10.dp))
 
-            if (badgeContent != null) {
-                Spacer(Modifier.width(10.dp))
-            }
-
+            // Reorder drag handle icon (= two lines)
             Icon(
-                imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.35f),
-                modifier = Modifier.size(20.dp)
+                imageVector = Icons.Rounded.DensityMedium,
+                contentDescription = "Reorder",
+                tint = onSurfaceMuted,
+                modifier = Modifier.size(16.dp)
             )
         }
     }
 }
 
 @Composable
-private fun QueueModalContent(
+private fun MenuRowItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = onSurface,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = onSurface
+        )
+    }
+}
+
+@Composable
+private fun QueueModalSheetContent(
     state: NowPlayingState,
     onTrackSelect: (MusicTrack) -> Unit,
     onClose: () -> Unit
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1870,22 +1228,29 @@ private fun QueueModalContent(
         ) {
             Column {
                 Text(
-                    text = "Playback Queue",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "UP NEXT IN QUEUE",
+                    style = ReonTokens.LabelMono,
+                    color = onSurfaceMuted
                 )
                 Text(
-                    text = "24 ambient tracks loaded",
-                    color = Color(0xFF67E8F9),
-                    fontSize = 12.sp
+                    text = "${state.queueTracks.size} Tracks Scheduled",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = onSurface
                 )
             }
-            IconButton(onClick = onClose) {
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { onClose() },
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = "Close",
-                    tint = Color.White.copy(alpha = 0.70f)
+                    tint = onSurface,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -1895,29 +1260,23 @@ private fun QueueModalContent(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(380.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .height(380.dp)
         ) {
-            items(state.queueTracks, key = { it.id }) { track ->
+            items(state.queueTracks) { track ->
                 val isCurrent = track.id == state.currentTrack.id
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            if (isCurrent) Color(0xFF22D3EE).copy(alpha = 0.15f)
-                            else Color.White.copy(alpha = 0.04f)
-                        )
-                        .bounceClick(scaleDown = 0.98f) { onTrackSelect(track) }
-                        .padding(10.dp),
+                        .height(ReonSize.trackRowHeight)
+                        .clickable { onTrackSelect(track) }
+                        .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF0C1428)),
-                        contentAlignment = Alignment.Center
+                            .size(ReonSize.trackArtRow)
+                            .clip(RoundedCornerShape(ReonRadius.md))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
                         Image(
                             painter = painterResource(R.drawable.art_refractions),
@@ -1932,33 +1291,30 @@ private fun QueueModalContent(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = track.title,
-                            color = if (isCurrent) Color(0xFF67E8F9) else Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Medium,
+                            color = onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = track.artist,
-                            color = Color.White.copy(alpha = 0.50f),
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = "${track.artist} · ${track.durationLabel}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = onSurfaceMuted
                         )
                     }
 
-                    if (isCurrent) {
-                        Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = "Playing",
-                            tint = Color(0xFF22D3EE),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(ReonRadius.xs))
+                            .border(ReonSize.hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(ReonRadius.xs))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
                         Text(
-                            text = track.durationLabel,
-                            color = Color.White.copy(alpha = 0.40f),
-                            fontSize = 11.sp
+                            text = "FLAC",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 10.sp,
+                            color = onSurfaceMuted
                         )
                     }
                 }
@@ -1968,22 +1324,19 @@ private fun QueueModalContent(
 }
 
 @Composable
-private fun PlaylistModalContent(
+private fun PlaylistModalSheetContent(
     trackTitle: String,
-    onSelectPlaylist: (String) -> Unit = {},
+    onSelectPlaylist: (String) -> Unit,
     onClose: () -> Unit
 ) {
-    val playlists = listOf(
-        "Deep Focus Sanctuary",
-        "Cybernetic Ambient Waves",
-        "Night Chill & Synths",
-        "Lossless Hi-Res Favorites"
-    )
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val playlists = listOf("Late Night Resonance", "Deep Focus // Electric Light", "Hi-Res Studio Master", "Spatial Ambience")
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1992,210 +1345,95 @@ private fun PlaylistModalContent(
         ) {
             Column {
                 Text(
-                    text = "Add to Playlist",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "ADD TO PLAYLIST",
+                    style = ReonTokens.LabelMono,
+                    color = onSurfaceMuted
                 )
                 Text(
-                    text = "Choose playlist for '$trackTitle'",
-                    color = Color.White.copy(alpha = 0.60f),
-                    fontSize = 12.sp
+                    text = "\"$trackTitle\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(onClick = onClose) {
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { onClose() },
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = "Close",
-                    tint = Color.White.copy(alpha = 0.70f)
+                    tint = onSurface,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
 
         Spacer(Modifier.height(14.dp))
 
-        playlists.forEach { pl ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.04f))
-                    .bounceClick(scaleDown = 0.98f) {
-                        onSelectPlaylist(pl)
-                        onClose()
-                    }
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlaylistAdd,
-                    contentDescription = null,
-                    tint = Color(0xFF67E8F9),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = pl,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            playlists.forEach { playlistName ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { onSelectPlaylist(playlistName); onClose() },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = playlistName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onSurface
+                    )
+                    Icon(
+                        imageVector = Icons.Rounded.PlaylistAdd,
+                        contentDescription = "Add",
+                        tint = onSurfaceMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = ReonSize.hairline)
             }
-            Spacer(Modifier.height(8.dp))
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
-fun MiniPlayerBar(
-    state: NowPlayingState,
-    onExpand: () -> Unit,
-    onPlayPause: () -> Unit,
-    onNext: () -> Unit,
-    modifier: Modifier = Modifier
+private fun OptionsSheetRowItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "mini_disc_rotation")
-    val discRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 10000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "mini_disc_angle"
-    )
-
-    Box(
-        modifier = modifier
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .shadow(20.dp, RoundedCornerShape(24.dp), ambientColor = Color.Black, spotColor = Color(0x6600C8FF))
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF131D38),
-                        Color(0xFF090E1F)
-                    )
-                )
-            )
-            .border(1.dp, Color(0xFF22D3EE).copy(alpha = 0.35f), RoundedCornerShape(24.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true, color = Color.White.copy(alpha = 0.2f)),
-                onClick = onExpand
-            )
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .testTag("mini_player_bar")
+            .height(50.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF050814))
-                        .border(1.dp, Color(0xFF22D3EE).copy(alpha = 0.40f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.art_refractions),
-                        contentDescription = "Mini Album Art",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                rotationZ = if (state.isPlaying) discRotation else 0f
-                            }
-                    )
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = state.title,
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = "${state.artist} · 96kHz FLAC",
-                        color = Color(0xFF67E8F9),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Normal,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF22D3EE).copy(alpha = 0.18f))
-                        .border(1.dp, Color(0xFF22D3EE).copy(alpha = 0.40f), CircleShape)
-                        .bounceClick(scaleDown = 0.88f, onClick = onPlayPause)
-                        .testTag("mini_play_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause" else "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .bounceClick(scaleDown = 0.88f, onClick = onNext)
-                        .testTag("mini_next_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.SkipNext,
-                        contentDescription = "Next Track",
-                        tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .bounceClick(scaleDown = 0.88f, onClick = onExpand)
-                        .testTag("mini_expand_button"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.KeyboardArrowUp,
-                        contentDescription = "Expand Player",
-                        tint = Color.White.copy(alpha = 0.75f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = onSurface,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.5.sp,
+            color = onSurface
+        )
     }
 }

@@ -27,9 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,6 +98,8 @@ fun HomeScreen(
     onArtistFollowProfileToggle: () -> Unit = {},
     onOpenLikedSongs: () -> Unit = {},
     onCloseLikedSongs: () -> Unit = {},
+    onOpenDownloads: () -> Unit = {},
+    onCloseDownloads: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
     onCloseHistory: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
@@ -139,7 +146,7 @@ fun HomeScreen(
                 onBackClick = onCloseNotifications,
                 onTrackSelect = onTrackSelect,
                 onOpenSettings = onOpenSettings,
-                onOpenDownloads = { onTabSelected(HomeTab.Downloads) },
+                onOpenDownloads = { onTabSelected(HomeTab.Library) },
                 onMarkAsRead = onMarkNotificationAsRead,
                 onMarkAllAsRead = onMarkAllNotificationsAsRead,
                 onClearAll = onClearAllNotifications,
@@ -203,6 +210,27 @@ fun HomeScreen(
                 },
                 onPlayAllClick = { onShowToast("Playing Liked Songs") },
                 onToggleLike = { track -> onLike() },
+                onShowToast = onShowToast
+            )
+        } else if (state.isDownloadsOpen) {
+            DownloadsScreen(
+                state = state,
+                onTrackSelect = onTrackSelect,
+                onBackClick = onCloseDownloads,
+                onDownloadAll = onDownloadAll,
+                onRemoveDownload = onRemoveDownload,
+                onToggleOfflineMode = onToggleOfflineMode,
+                onToggleAutoSync = onToggleAutoSync,
+                onToggleCellular = onToggleCellularDownload,
+                onFilterSelect = onDownloadFilterSelect,
+                onQualitySelect = onDownloadQualitySelect,
+                onToggleQualitySelector = onToggleQualitySelector,
+                onShuffleAll = onShuffleDownloads,
+                onClearAll = onClearAllDownloads,
+                onOpenPlaylist = onOpenPlaylist,
+                onOpenAlbum = onOpenAlbum,
+                onOpenArtist = onOpenArtist,
+                onOpenLikedSongs = onOpenLikedSongs,
                 onShowToast = onShowToast
             )
         } else if (state.selectedArtist != null) {
@@ -274,322 +302,195 @@ fun HomeScreen(
                         onShowToast = onShowToast
                     )
                 }
-                HomeTab.Downloads -> {
-                    DownloadsScreen(
+                HomeTab.Library -> {
+                    LibraryScreen(
                         state = state,
                         onTrackSelect = onTrackSelect,
-                        onDownloadAll = onDownloadAll,
-                        onRemoveDownload = onRemoveDownload,
-                        onToggleOfflineMode = onToggleOfflineMode,
-                        onToggleAutoSync = onToggleAutoSync,
-                        onToggleCellular = onToggleCellularDownload,
-                        onFilterSelect = onDownloadFilterSelect,
-                        onQualitySelect = onDownloadQualitySelect,
-                        onToggleQualitySelector = onToggleQualitySelector,
-                        onShuffleAll = onShuffleDownloads,
-                        onClearAll = onClearAllDownloads,
+                        onOpenLikedSongs = onOpenLikedSongs,
+                        onOpenHistory = onOpenHistory,
+                        onOpenDownloads = onOpenDownloads,
                         onOpenPlaylist = onOpenPlaylist,
                         onOpenAlbum = onOpenAlbum,
                         onOpenArtist = onOpenArtist,
+                        onOpenNotifications = onOpenNotifications,
+                        onOpenAnalytics = onOpenAnalytics,
+                        onOpenSettings = onOpenSettings,
+                        onShowToast = onShowToast
+                    )
+                }
+                HomeTab.Analytics -> {
+                    AnalyticsScreen(
+                        state = state,
+                        onTrackSelect = onTrackSelect,
+                        onBackClick = { onTabSelected(HomeTab.Home) },
+                        onPlayPause = onPlayPause,
+                        onLike = onLike,
+                        onOpenNowPlaying = onOpenNowPlaying,
+                        onShowToast = onShowToast
+                    )
+                }
+                HomeTab.Settings -> {
+                    SettingsScreen(
+                        state = state,
+                        onBackClick = { onTabSelected(HomeTab.Home) },
+                        onShareClick = { onShowToast("Shared REON Audio Engine") },
+                        onUpdateProfile = onUpdateProfile,
+                        onOpenEditProfile = onOpenEditProfile,
+                        onCloseEditProfile = onCloseEditProfile,
+                        onOpenAbout = onOpenAbout,
+                        onCloseAbout = onCloseAbout,
+                        onOpenLicenses = onOpenLicenses,
+                        onCloseLicenses = onCloseLicenses,
+                        onSetThemeMode = onSetThemeMode,
+                        onSetAccentColor = onSetAccentColor,
+                        onSetBackgroundTheme = onSetBackgroundTheme,
+                        onSetFontFamily = onSetFontFamily,
+                        onSetFontSizeScale = onSetFontSizeScale,
+                        onClearCache = onClearCache,
+                        onOptimizeThumbnails = onOptimizeThumbnails,
                         onShowToast = onShowToast
                     )
                 }
                 HomeTab.Home -> {
-                    // Single root LazyColumn with all 18 home sections
+                    var selectedHomeCategory by remember { mutableStateOf("All Focus") }
+
                     LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 4.dp, bottom = 180.dp)
-                ) {
-                    // 1. Top Bar
-                    item(key = "section_top_bar") {
-                        HomeTopBar(
-                            unreadCount = state.notifications.count { !it.isRead },
-                            onNotificationClick = onOpenNotifications,
-                            onAnalyticsClick = onOpenAnalytics,
-                            onSettingsClick = onOpenSettings
-                        )
-                    }
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 180.dp)
+                    ) {
+                        // 1. Top Bar (< ■ REON | Analytics, Notifications, Tune, Avatar >)
+                        item(key = "section_top_bar") {
+                            HomeTopBar(
+                                onAnalyticsClick = onOpenAnalytics,
+                                onNotificationClick = onOpenNotifications,
+                                onFiltersClick = { onShowToast("Library filters") },
+                                onProfileClick = { onTabSelected(HomeTab.Settings) }
+                            )
+                        }
 
-                    // 2. Greeting Block
-                    item(key = "section_greeting") {
-                        HomeGreetingBlock(
-                            name = state.greetingName,
-                            subtitle = state.greetingSubtitle
-                        )
-                    }
+                        // 2. Greeting Header Block (FEED // 010.4 | Good evening, Listener | ● 96KHZ • 24-BIT)
+                        item(key = "section_greeting_header") {
+                            HomeGreetingHeader()
+                        }
 
-                    // 3. Search + Filters (Clicking switches directly to Search tab or applies filter)
-                    item(key = "section_search_filters") {
-                        HomeSearchAndFilters(
-                            searchQuery = state.searchQuery,
-                            onSearchChange = {
-                                onSearchChange(it)
-                                onTabSelected(HomeTab.Search)
-                            },
-                            selectedFilter = state.selectedFilter,
-                            filters = state.filterChips,
-                            onFilterSelect = { filter ->
-                                onFilterSelect(filter)
-                                if (filter != "All") {
-                                    onTabSelected(HomeTab.Search)
+                        // 3. Category Filter Chips (All Focus, Hi-Res Masters, Curated Vaults, Ambient)
+                        item(key = "section_category_chips") {
+                            HomeCategoryChips(
+                                selectedCategory = selectedHomeCategory,
+                                onCategorySelect = { selectedHomeCategory = it }
+                            )
+                        }
+
+                        // 4. Hero Featured Acoustic Residency Card
+                        item(key = "section_hero_residency") {
+                            HomeHeroAcousticResidencyCard(
+                                onStreamMasterClick = {
+                                    onTrackSelect(
+                                        TrackItem(
+                                            id = "nt_4",
+                                            title = "Nocturne Trance Sessions Vol. IV",
+                                            artist = "Solaris & Kaelen feat. Aura",
+                                            album = "Acoustic Residency",
+                                            duration = "6:12",
+                                            badge = "HI-RES",
+                                            artSeed = 1
+                                        )
+                                    )
+                                },
+                                onBookmarkClick = { onShowToast("Saved to Bookmarks") }
+                            )
+                        }
+
+                        // 5. "■ Jump Back In" (Resume Dock)
+                        item(key = "section_jump_back_in") {
+                            HomeJumpBackInGrid(onTrackSelect = onTrackSelect)
+                        }
+
+                        // 6. "■ Curated Vaults"
+                        item(key = "section_curated_vaults") {
+                            HomeCuratedVaultsRow(
+                                onVaultSelect = { vault ->
+                                    onOpenPlaylist(
+                                        PlaylistItem(
+                                            id = "pl_v1",
+                                            title = if (vault == "all") "Curated Vaults" else vault,
+                                            subtitle = "Ambient & Deep Spatial Works",
+                                            trackCount = "28 tracks",
+                                            duration = "2h 42m",
+                                            artSeed = 1
+                                        )
+                                    )
                                 }
-                            }
-                        )
-                    }
+                            )
+                        }
 
-                    item(key = "spacer_hero") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
+                        // 7. "■ Heavy Rotation" (01 to 04 with play triggers)
+                        item(key = "section_heavy_rotation") {
+                            HomeHeavyRotationList(onTrackSelect = onTrackSelect)
+                        }
 
-                    // 4. Continue Listening (Hero Bento Card)
-                    item(key = "section_continue_listening") {
-                        HomeContinueListeningHero(
-                            track = state.currentTrack,
-                            progress = state.playbackProgress,
-                            currentPos = state.currentPositionStr,
-                            remainingPos = state.remainingPositionStr,
-                            queueText = state.queueText,
-                            playingInText = state.playingInText,
-                            onCardClick = onOpenNowPlaying,
-                            onPlayPause = onPlayPause,
-                            onLike = onLike,
-                            onSeeAll = { onOpenLikedSongs() },
-                            onMoreOptions = { }
-                        )
-                    }
-
-                    item(key = "spacer_quick_access") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 5. Quick Access — 2×2 Bento
-                    item(key = "section_quick_access") {
-                        HomeQuickAccessBento(
-                            likedCount = state.likedCount,
-                            downloadsCount = state.downloadsCount,
-                            historyText = state.historyText,
-                            flowRadioText = state.flowRadioText,
-                            onItemClick = { title ->
-                                when (title) {
-                                    "liked_songs", "Liked Songs" -> onOpenLikedSongs()
-                                    "history", "History" -> onOpenHistory()
-                                    "Downloads", "downloads" -> onTabSelected(HomeTab.Downloads)
-                                    "Search" -> onTabSelected(HomeTab.Search)
-                                    else -> onShowToast("Opening $title")
+                        // 8. "■ New Lossless Masters"
+                        item(key = "section_new_lossless_masters") {
+                            HomeNewLosslessMastersRow(
+                                onMasterSelect = { master ->
+                                    onOpenAlbum(
+                                        AlbumItem(
+                                            id = "alb_m1",
+                                            title = master,
+                                            artist = "Solaris & Kaelen",
+                                            year = "2025",
+                                            trackCount = "8 tracks",
+                                            genre = "Electronic",
+                                            artSeed = 2
+                                        )
+                                    )
                                 }
-                            }
-                        )
-                    }
+                            )
+                        }
 
-                    item(key = "spacer_trending") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
+                        // 9. "■ Artists in Residence"
+                        item(key = "section_artists_in_residence") {
+                            HomeArtistsInResidenceRow(
+                                onArtistSelect = { artistName ->
+                                    onOpenArtist(
+                                        ArtistItem(
+                                            id = "art_1",
+                                            name = artistName,
+                                            genre = "Electronic",
+                                            isFollowing = true,
+                                            artSeed = 1
+                                        )
+                                    )
+                                },
+                                onFollowClick = { onShowToast("Followed $it") }
+                            )
+                        }
 
-                    // 6. Trending Now
-                    item(key = "section_trending") {
-                        HomeTrendingNowSection(
-                            tracks = state.trendingList,
-                            onTrackClick = onTrackSelect,
-                            onSeeAll = {
-                                onFilterSelect("All")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_top_charts") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 7. Top Charts
-                    item(key = "section_top_charts") {
-                        HomeTopChartsSection(
-                            tracks = state.topChartsList,
-                            onTrackClick = onTrackSelect,
-                            onSeeAll = { onShowToast("Viewing Global Top Charts") }
-                        )
-                    }
-
-                    item(key = "spacer_featured_artists") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 8. Featured Artists
-                    item(key = "section_featured_artists") {
-                        HomeFeaturedArtistsSection(
-                            artists = state.featuredArtists,
-                            onArtistClick = { artist ->
-                                onOpenArtist(artist)
-                            },
-                            onFollowToggle = onArtistFollowToggle,
-                            onDiscover = {
-                                onOpenArtist(null)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_artist_of_week") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 9. Artist of the Week (Editorial Bento)
-                    item(key = "section_artist_of_week") {
-                        HomeArtistOfTheWeekEditorial(
-                            headline = state.artistOfTheWeekHeadline,
-                            description = state.artistOfTheWeekSubtitle,
-                            tag = state.artistOfTheWeekTag,
-                            onReadStory = {
-                                onSearchChange("ISOxo & Knock2")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_new_releases") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 10. New Releases
-                    item(key = "section_new_releases") {
-                        HomeNewReleasesSection(
-                            releases = state.newReleases,
-                            onReleaseClick = onTrackSelect,
-                            onFreshDrops = {
-                                onFilterSelect("All")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_moods_genres") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 11. Moods & Genres
-                    item(key = "section_moods_genres") {
-                        HomeMoodsAndGenresSection(
-                            moods = state.moodsGenres,
-                            selectedMood = state.selectedMood,
-                            onMoodSelect = onMoodSelect
-                        )
-                    }
-
-                    item(key = "spacer_featured_playlists") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 12. Featured Playlists
-                    item(key = "section_featured_playlists") {
-                        HomeFeaturedPlaylistsSection(
-                            playlists = state.featuredPlaylists,
-                            onPlaylistClick = { pl -> onOpenPlaylist(pl) },
-                            onExplore = {
-                                onFilterSelect("Playlists")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_made_for_you") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 13. Made For You
-                    item(key = "section_made_for_you") {
-                        HomeMadeForYouSection(
-                            mixes = state.dailyMixes,
-                            onMixClick = { mix -> onOpenPlaylist(PlaylistItem(mix.id, mix.title, mix.subtitle, "28 tracks", "1 hr 30 min", 1)) }
-                        )
-                    }
-
-                    item(key = "spacer_because_you_played") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 14. Because You Played
-                    item(key = "section_because_you_played") {
-                        HomeBecauseYouPlayedSection(
-                            artistName = state.becauseYouPlayedArtist,
-                            matchBadge = state.becauseYouPlayedMatch,
-                            tracks = state.becauseYouPlayedList,
-                            onTrackClick = onTrackSelect
-                        )
-                    }
-
-                    item(key = "spacer_editors_picks") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 15. Editor's Picks
-                    item(key = "section_editors_picks") {
-                        HomeEditorsPicksSection(
-                            headline = state.editorsPickHeadline,
-                            description = state.editorsPickDescription,
-                            onReadStory = {
-                                onSearchChange("Tokyo")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "spacer_recently_played") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 16. Recently Played
-                    item(key = "section_recently_played") {
-                        HomeRecentlyPlayedSection(
-                            tracks = state.recentlyPlayedList,
-                            onTrackClick = onTrackSelect,
-                            onHistoryClick = onOpenHistory
-                        )
-                    }
-
-                    item(key = "spacer_rediscover") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 17. Rediscover
-                    item(key = "section_rediscover") {
-                        HomeRediscoverSection(
-                            tracks = state.rediscoverList,
-                            onTrackClick = onTrackSelect
-                        )
-                    }
-
-                    item(key = "spacer_live_upcoming") {
-                        Spacer(Modifier.height(ReonTokens.SectionSpacing))
-                    }
-
-                    // 18. Live & Upcoming
-                    item(key = "section_live_upcoming") {
-                        HomeLiveUpcomingSection(
-                            events = state.liveEvents,
-                            onEventClick = { event ->
-                                onSearchChange(event.artist)
-                                onTabSelected(HomeTab.Search)
-                            },
-                            onNearYou = {
-                                onSearchChange("Live")
-                                onTabSelected(HomeTab.Search)
-                            }
-                        )
-                    }
-
-                    item(key = "bottom_end_space") {
-                        Spacer(Modifier.height(24.dp))
+                        // 10. "☵ REON Acoustic Architecture" Telemetry Card
+                        item(key = "section_telemetry_architecture") {
+                            HomeTelemetryArchitectureCard()
+                        }
                     }
                 }
             }
         }
-    }
 
         // 19. Floating Mini Player & Upside Floating Toast notification
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Toast notification pill floating just upside of mini player
@@ -607,7 +508,7 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .padding(bottom = 10.dp, start = 16.dp, end = 16.dp)
-                            .shadow(16.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFF0057FF).copy(alpha = 0.25f))
+                            .shadow(16.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.2f))
                             .clip(RoundedCornerShape(16.dp))
                             .background(Color(0xFF0B1020))
                             .border(1.dp, Color(0xFF242C44), RoundedCornerShape(16.dp))
@@ -621,13 +522,13 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(20.dp)
                                     .clip(CircleShape)
-                                    .background(ReonTokens.Primary),
+                                    .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.CheckCircle,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(13.dp)
                                 )
                             }
@@ -653,15 +554,16 @@ fun HomeScreen(
                     onPrevious = onPrevious,
                     onNext = onNext,
                     onLike = onLike,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-
-                // 20. Bottom Navigation (Three tabs only: Home, Search, Downloads)
-                HomeBottomNav(
-                    currentTab = state.currentTab,
-                    onTabSelected = onTabSelected
+                    modifier = Modifier.padding(bottom = 6.dp),
+                    playbackProgress = state.playbackProgress
                 )
             }
+
+            // 20. Bottom Navigation Dock
+            HomeBottomNav(
+                currentTab = state.currentTab,
+                onTabSelected = onTabSelected
+            )
         }
     }
 }

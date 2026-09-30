@@ -1,23 +1,18 @@
 package com.example.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,183 +21,132 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.ElectricBolt
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Radio
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.components.TrackArtImage
+import com.example.ui.theme.reonExtras
 
 // ==========================================
-// 1. Top Bar
+// 1. Top Bar (< ■ REON | Analytics, Notifications, Tune, Avatar >)
 // ==========================================
 @Composable
 fun HomeTopBar(
-    unreadCount: Int = 0,
-    onNotificationClick: () -> Unit = {},
     onAnalyticsClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onNotificationClick: () -> Unit = {},
+    onFiltersClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
+            .padding(horizontal = ReonSpacing.margin, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: REON bolt logo in Electric Blue circle (28dp) + wordmark + caption
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(ReonTokens.Primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.ElectricBolt,
-                    contentDescription = "REON Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(17.dp)
-                )
-            }
-
-            Spacer(Modifier.width(10.dp))
-
-            Column {
-                Text(
-                    text = "REON",
-                    style = ReonTokens.HeadlineMedium.copy(
-                        fontSize = 18.sp,
-                        letterSpacing = 4.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = "UNIFIED AUDIO EXPERIENCE",
-                    style = ReonTokens.LabelSmall.copy(
-                        letterSpacing = 2.sp,
-                        fontSize = 8.sp,
-                        color = ReonTokens.TextTertiary
-                    )
-                )
-            }
+                    .size(14.dp)
+                    .background(onSurface, RoundedCornerShape(2.dp))
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "REON",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = onSurface,
+                fontSize = 18.sp,
+                letterSpacing = 1.2.sp
+            )
         }
 
-        // Right: notification bell icon + analytics icon + settings gear icon (24dp, tint #0B1020, 40dp touch targets)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.2f)),
-                        onClick = onNotificationClick
-                    )
-                    .testTag("top_bell_button"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Notifications,
-                    contentDescription = "Notifications",
-                    tint = ReonTokens.TextPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-                if (unreadCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 7.dp, end = 7.dp)
-                            .size(9.dp)
-                            .clip(CircleShape)
-                            .background(ReonTokens.Primary)
-                            .border(1.5.dp, Color.White, CircleShape)
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.2f)),
-                        onClick = onAnalyticsClick
-                    )
-                    .testTag("top_analytics_button"),
-                contentAlignment = Alignment.Center
+            IconButton(
+                onClick = onAnalyticsClick,
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.BarChart,
                     contentDescription = "Analytics",
-                    tint = ReonTokens.TextPrimary,
-                    modifier = Modifier.size(24.dp)
+                    tint = onSurface,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            IconButton(
+                onClick = onNotificationClick,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Notifications,
+                    contentDescription = "Notifications",
+                    tint = onSurface,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            IconButton(
+                onClick = onFiltersClick,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Tune,
+                    contentDescription = "Filters",
+                    tint = onSurface,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.2f)),
-                        onClick = onSettingsClick
-                    )
-                    .testTag("top_settings_button"),
+                    .background(onSurface)
+                    .clickable { onProfileClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = "Settings",
-                    tint = ReonTokens.TextPrimary,
-                    modifier = Modifier.size(24.dp)
+                    imageVector = Icons.Rounded.Person,
+                    contentDescription = "Profile",
+                    tint = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -210,144 +154,67 @@ fun HomeTopBar(
 }
 
 // ==========================================
-// 2. Greeting Block
+// 2. Greeting Header Block (FEED // 010.4 | Good evening, Listener | ● 96KHZ • 24-BIT)
 // ==========================================
 @Composable
-fun HomeGreetingBlock(
-    name: String,
-    subtitle: String
+fun HomeGreetingHeader(
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        // Space Pill
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 6.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(ReonTokens.Primary)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "DEEP FOCUS SPACE",
-                style = ReonTokens.LabelSmall.copy(
-                    color = ReonTokens.Primary,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-            )
-        }
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
 
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ReonSpacing.margin, vertical = 4.dp)
+    ) {
         Text(
-            text = "Good evening, $name",
-            style = ReonTokens.HeadlineLarge
+            text = "FEED // 010.4",
+            style = ReonTokens.LabelMono,
+            fontSize = 10.5.sp,
+            color = onSurfaceMuted,
+            letterSpacing = 0.5.sp
         )
 
         Spacer(Modifier.height(4.dp))
 
-        Text(
-            text = subtitle,
-            style = ReonTokens.BodySmall
-        )
-    }
-}
-
-// ==========================================
-// 3. Search + Filters
-// ==========================================
-@Composable
-fun HomeSearchAndFilters(
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    selectedFilter: String,
-    filters: List<String>,
-    onFilterSelect: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        // Search Pill: 48dp, rounded-full, #FFFFFF fill, 1dp #E4E9F5 border
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .shadow(2.dp, CircleShape, ambientColor = Color(0x0A0B1020), spotColor = Color(0x0A0B1020))
-                .clip(CircleShape)
-                .background(ReonTokens.Surface)
-                .border(1.dp, ReonTokens.Hairline, CircleShape)
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.CenterStart
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Text(
+                text = "Good evening, Listener",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = onSurface,
+                fontSize = 24.sp
+            )
+
+            // Right Pill: ● 96KHZ • 24-BIT
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(surfaceHigh)
+                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = "Search",
-                    tint = ReonTokens.TextTertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-
-                Spacer(Modifier.width(10.dp))
-
-                Text(
-                    text = if (searchQuery.isEmpty()) "Search songs, artists, moods…" else searchQuery,
-                    style = ReonTokens.BodyMedium.copy(
-                        color = if (searchQuery.isEmpty()) ReonTokens.TextTertiary else ReonTokens.TextPrimary
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-
-                Icon(
-                    imageVector = Icons.Rounded.Mic,
-                    contentDescription = "Voice Search",
-                    tint = ReonTokens.TextTertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // Filter chip row: 8dp gap
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.ChipGap)
-        ) {
-            items(filters) { filter ->
-                val isSelected = filter == selectedFilter
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (isSelected) ReonTokens.SoftContainer else ReonTokens.Surface)
-                        .border(
-                            width = 1.dp,
-                            color = if (isSelected) ReonTokens.Primary.copy(alpha = 0.20f) else ReonTokens.Hairline,
-                            shape = CircleShape
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.15f)),
-                            onClick = { onFilterSelect(filter) }
-                        )
-                        .padding(horizontal = 18.dp, vertical = 8.dp)
-                        .testTag("filter_chip_$filter"),
-                    contentAlignment = Alignment.Center
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(onSurface)
+                    )
+                    Spacer(Modifier.width(5.dp))
                     Text(
-                        text = filter,
-                        style = ReonTokens.LabelMedium.copy(
-                            color = if (isSelected) ReonTokens.Primary else ReonTokens.TextSecondary,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
-                        )
+                        text = "96KHZ • 24-BIT",
+                        style = ReonTokens.LabelMono,
+                        fontSize = 9.5.sp,
+                        color = onSurface,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -356,357 +223,772 @@ fun HomeSearchAndFilters(
 }
 
 // ==========================================
-// 4. Continue Listening (Hero Bento Card)
+// 3. Category Filter Chips (All Focus, Hi-Res Masters, Curated Vaults, Ambient)
 // ==========================================
 @Composable
-fun HomeContinueListeningHero(
-    track: TrackItem,
-    progress: Float,
-    currentPos: String,
-    remainingPos: String,
-    queueText: String,
-    playingInText: String,
-    onCardClick: () -> Unit,
-    onPlayPause: () -> Unit,
-    onLike: () -> Unit,
-    onSeeAll: () -> Unit,
-    onMoreOptions: () -> Unit = {}
+fun HomeCategoryChips(
+    selectedCategory: String,
+    onCategorySelect: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier
+    val categories = listOf("All Focus", "Hi-Res Masters", "Curated Vaults", "Ambient")
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+
+    Row(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 4.dp)
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = ReonSpacing.margin, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Section Header Row
+        categories.forEach { category ->
+            val isSelected = category == selectedCategory
+            Box(
+                modifier = Modifier
+                    .height(32.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isSelected) primaryColor else surfaceHigh)
+                    .border(
+                        ReonSize.hairline,
+                        if (isSelected) primaryColor else hairlineColor,
+                        RoundedCornerShape(16.dp)
+                    )
+                    .clickable { onCategorySelect(category) }
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = category,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) onPrimaryColor else onSurface,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
+}
+
+// ==========================================
+// 4. Hero Featured Acoustic Residency Card
+// ==========================================
+@Composable
+fun HomeHeroAcousticResidencyCard(
+    onStreamMasterClick: () -> Unit = {},
+    onBookmarkClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ReonSpacing.margin, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+    ) {
+        Column {
+            // Hero Image with Overlays
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.art_refractions),
+                    contentDescription = "Nocturne Trance Sessions Vol. IV",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Dark gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.85f)
+                                )
+                            )
+                        )
+                )
+
+                // Top-Left Badge: ✦ MASTER CUT • 24-BIT / 192KHZ FLAC
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xD9000000))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "✦ MASTER CUT • 24-BIT / 192KHZ FLAC",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 9.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Bottom Content inside image
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = "ACOUSTIC RESIDENCY № 04",
+                        style = ReonTokens.LabelMono,
+                        fontSize = 10.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "Nocturne Trance Sessions Vol. IV",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 17.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "Solaris & Kaelen feat. Aura • Studio Soundstage...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.5.sp
+                    )
+                }
+            }
+
+            // Bottom Transport Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Solid Black Stream Master Button
+                    Box(
+                        modifier = Modifier
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(primaryColor)
+                            .clickable(onClick = onStreamMasterClick)
+                            .padding(horizontal = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = null,
+                                tint = onPrimaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "Stream Master",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = onPrimaryColor,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+
+                    // Bookmark Button
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(surfaceHigh)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(8.dp))
+                            .clickable(onClick = onBookmarkClick),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.BookmarkBorder,
+                            contentDescription = "Bookmark",
+                            tint = onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Right: DYNAMIC RANGE / DR14 • BIT-DIRECT
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "DYNAMIC RANGE",
+                        style = ReonTokens.LabelMono,
+                        fontSize = 9.sp,
+                        color = onSurfaceMuted,
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(Modifier.height(1.dp))
+                    Text(
+                        text = "DR14 • BIT-DIRECT",
+                        style = ReonTokens.LabelMono,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// 5. "■ Jump Back In" (Resume Dock)
+// ==========================================
+@Composable
+fun HomeJumpBackInGrid(
+    onTrackSelect: (TrackItem) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    val items = listOf(
+        Triple("Neon Horizons", "ECHO DRIFT • DSD 256", 0.35f),
+        Triple("Subtle Echoes", "KAELEN SOLO • FLAC 96/24", 0.55f),
+        Triple("Obsidian Echoes", "MIRAGE ENSEMBLE • PCM 192k", 0.75f),
+        Triple("Equinox Redux", "AURA SOUND LAB • DSD 5.6M", 0.45f)
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ReonSpacing.margin, vertical = 6.dp)
+    ) {
+        // Section Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Continue Listening",
-                    style = ReonTokens.HeadlineMedium
-                )
-                Spacer(Modifier.width(10.dp))
-                // Right-side small pill badge "NOW PLAYING" (blue dot + labelSmall, blue text)
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(ReonTokens.SoftContainer)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(ReonTokens.Primary)
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            text = "NOW PLAYING",
-                            style = ReonTokens.LabelSmall.copy(
-                                color = ReonTokens.Primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp
-                            )
-                        )
-                    }
-                }
+                        .size(6.dp)
+                        .background(onSurface, RoundedCornerShape(1.dp))
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Jump Back In",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp
+                )
             }
 
             Text(
-                text = "See all →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onSeeAll
-                    )
+                text = "RESUME DOCK",
+                style = ReonTokens.LabelMono,
+                fontSize = 10.5.sp,
+                color = onSurfaceMuted
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Hero Bento Card: 28dp radius, white surface, 1dp hairline-blue border, active blue glow
-        Box(
+        // 2x2 Bento Grid
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Item 1
+                JumpBackInCard(
+                    title = items[0].first,
+                    meta = items[0].second,
+                    progress = items[0].third,
+                    seed = 1,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onTrackSelect(TrackItem("jb_1", items[0].first, "Echo Drift", "Resume", "4:18", artSeed = 1)) }
+                )
+                // Item 2
+                JumpBackInCard(
+                    title = items[1].first,
+                    meta = items[1].second,
+                    progress = items[1].third,
+                    seed = 2,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onTrackSelect(TrackItem("jb_2", items[1].first, "Kaelen Solo", "Resume", "5:14", artSeed = 2)) }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Item 3
+                JumpBackInCard(
+                    title = items[2].first,
+                    meta = items[2].second,
+                    progress = items[2].third,
+                    seed = 3,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onTrackSelect(TrackItem("jb_3", items[2].first, "Mirage Ensemble", "Resume", "3:40", artSeed = 3)) }
+                )
+                // Item 4
+                JumpBackInCard(
+                    title = items[3].first,
+                    meta = items[3].second,
+                    progress = items[3].third,
+                    seed = 4,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onTrackSelect(TrackItem("jb_4", items[3].first, "Aura Sound Lab", "Resume", "4:50", artSeed = 4)) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun JumpBackInCard(
+    title: String,
+    meta: String,
+    progress: Float,
+    seed: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(cardBackground)
+            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(surfaceHigh)
+                ) {
+                    TrackArtImage(
+                        url = getArtUrlForSeed(seed),
+                        contentDescription = title,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp
+                    )
+                    Spacer(Modifier.height(1.dp))
+                    Text(
+                        text = meta,
+                        style = ReonTokens.LabelMono,
+                        fontSize = 9.sp,
+                        color = onSurfaceMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .background(surfaceHigh)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(primaryColor)
+                )
+            }
+        }
+    }
+}
+
+// ==========================================
+// 6. "■ Curated Vaults"
+// ==========================================
+@Composable
+fun HomeCuratedVaultsRow(
+    onVaultSelect: (String) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .reonCardShadow(shape = ReonTokens.ShapeHero, isActive = true)
-                .clip(ReonTokens.ShapeHero)
-                .background(ReonTokens.Surface)
-                .border(1.dp, ReonTokens.Primary.copy(alpha = 0.16f), ReonTokens.ShapeHero)
-                .reonCardPress(onClick = onCardClick)
-                .padding(16.dp)
-                .testTag("continue_listening_hero")
+                .padding(horizontal = ReonSpacing.margin),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(onSurface, RoundedCornerShape(1.dp))
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Curated Vaults",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp
+                )
+            }
+
+            Text(
+                text = "VIEW ALL (18)",
+                style = ReonTokens.LabelMono,
+                fontSize = 10.5.sp,
+                color = onSurfaceMuted,
+                modifier = Modifier.clickable { onVaultSelect("all") }
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = ReonSpacing.margin),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Vault 1: Late Night Resonance
+            Column(
+                modifier = Modifier
+                    .width(180.dp)
+                    .clickable { onVaultSelect("Late Night Resonance") }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(180.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
                 ) {
-                    // 88dp album art (20dp radius) on left with LOSSLESS badge
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = "Late Night Resonance",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Badge: DSD 5.6MHz
                     Box(
                         modifier = Modifier
-                            .size(88.dp)
-                            .clip(ReonTokens.ShapeArt20)
-                            .background(ReonTokens.Muted)
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xD9000000))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.art_refractions),
-                            contentDescription = track.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-
-                        // LOSSLESS quality badge
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(6.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xCC060913))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(4.dp)
-                                        .clip(CircleShape)
-                                        .background(ReonTokens.SuccessGreen)
-                                )
-                                Spacer(Modifier.width(3.dp))
-                                Text(
-                                    text = "LOSSLESS",
-                                    color = ReonTokens.SuccessGreen,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.width(14.dp))
-
-                    // Track details & like button
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Tiny "DEEP FOCUS" pill
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(Color(0x140057FF))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "DEEP FOCUS",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = ReonTokens.Primary,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 9.sp
-                                    )
-                                )
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Heart button
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(if (track.isLiked) Color(0x1AFF3B6B) else Color.Transparent)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = ripple(bounded = true, color = ReonTokens.Pink.copy(alpha = 0.3f)),
-                                            onClick = onLike
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Favorite,
-                                        contentDescription = "Like",
-                                        tint = if (track.isLiked) ReonTokens.Pink else ReonTokens.TextTertiary.copy(alpha = 0.5f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Spacer(Modifier.width(4.dp))
-
-                                // Three dots options button
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.2f)),
-                                            onClick = onMoreOptions
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.MoreVert,
-                                        contentDescription = "Options",
-                                        tint = ReonTokens.TextTertiary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
                         Text(
-                            text = track.title,
-                            style = ReonTokens.TitleMedium.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = "DSD 5.6MHz",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 8.5.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
-
-                        Text(
-                            text = "${track.artist} · ${track.album}",
-                            style = ReonTokens.BodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(Modifier.height(10.dp))
-
-                        // Linear progress bar (#0057FF fill, #E4E9F5 track, 3dp, rounded)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .clip(CircleShape)
-                                .background(ReonTokens.Hairline)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(progress)
-                                    .height(3.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Primary)
-                            )
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
-                        // Row underneath: "01:24" left, "-02:23" right in labelSmall #8B93AC, tabular nums
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = currentPos, style = ReonTokens.DurationText)
-                            Text(text = remainingPos, style = ReonTokens.DurationText)
-                        }
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(6.dp))
 
-                // Bottom action row: Queue pill, Playing in pill, previous, 48dp blue circular play button, next
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = "Late Night Resonance",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "Ambient & Deep Spatial Works",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceMuted,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "28 TRACKS  •  2H 42M",
+                    style = ReonTokens.LabelMono,
+                    fontSize = 9.5.sp,
+                    color = onSurfaceMuted
+                )
+            }
+
+            // Vault 2: Architectural Lows
+            Column(
+                modifier = Modifier
+                    .width(180.dp)
+                    .clickable { onVaultSelect("Architectural Lows") }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(180.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = "Architectural Lows",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Badge: 24-BIT / 192k
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xD9000000))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        // Dark Queue pill
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(Color(0xFF0C1326))
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Text(
-                                text = queueText,
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        // Light "Playing in ~ 14" pill
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(ReonTokens.SoftContainer)
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Text(
-                                text = playingInText,
-                                color = ReonTokens.Primary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Text(
+                            text = "24-BIT / 192k",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 8.5.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
+                }
 
-                    // Transport controls
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = "Architectural Lows",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "Deep Sub-Bass & Modular...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceMuted,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "19 TRACKS  •  1H 54M",
+                    style = ReonTokens.LabelMono,
+                    fontSize = 9.5.sp,
+                    color = onSurfaceMuted
+                )
+            }
+        }
+    }
+}
+
+// ==========================================
+// 7. "■ Heavy Rotation" (01 to 04 with play triggers)
+// ==========================================
+@Composable
+fun HomeHeavyRotationList(
+    onTrackSelect: (TrackItem) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+
+    val tracks = listOf(
+        TrackItem("hr_1", "Crystalline Dispersion", "Solaris & Aura Lab", "Heavy", "6:42", badge = "DSD", artSeed = 1),
+        TrackItem("hr_2", "Nordic Tectonic Drift", "Kaelen Acoustic Works", "Heavy", "8:19", badge = "24-BIT", artSeed = 2),
+        TrackItem("hr_3", "Monolith Variations: Pt. II", "Mirage Architecture", "Heavy", "5:12", badge = "HI-RES", artSeed = 3),
+        TrackItem("hr_4", "Glass & Anodized Steel", "Reon Sound Lab Ensemble", "Heavy", "4:58", badge = "DSD", artSeed = 4)
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ReonSpacing.margin, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(onSurface, RoundedCornerShape(1.dp))
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Heavy Rotation",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp
+                )
+            }
+
+            Text(
+                text = "GLOBAL METRICS",
+                style = ReonTokens.LabelMono,
+                fontSize = 10.5.sp,
+                color = onSurfaceMuted
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        tracks.forEachIndexed { index, track ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onTrackSelect(track) }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Track Number (01, 02...)
+                Text(
+                    text = String.format("%02d", index + 1),
+                    style = ReonTokens.LabelMono,
+                    fontSize = 12.sp,
+                    color = onSurfaceMuted,
+                    modifier = Modifier.width(28.dp)
+                )
+
+                // Title + Badge & Artist
+                Column(modifier = Modifier.weight(1f)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.SkipPrevious,
-                                contentDescription = "Previous",
-                                tint = ReonTokens.TextPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        Text(
+                            text = track.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
 
-                        // 48dp Electric Blue circular play button with white play icon and glow
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .shadow(10.dp, CircleShape, ambientColor = ReonTokens.Primary, spotColor = ReonTokens.Primary)
-                                .clip(CircleShape)
-                                .background(ReonTokens.Primary)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(bounded = true, color = Color.White.copy(alpha = 0.3f)),
-                                    onClick = onPlayPause
+                        if (track.badge.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(surfaceHigh)
+                                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(3.dp))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = track.badge,
+                                    style = ReonTokens.LabelMono,
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurfaceMuted
                                 )
-                                .testTag("continue_listening_play_button"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (track.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = if (track.isPlaying) "Pause" else "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(26.dp)
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.SkipNext,
-                                contentDescription = "Next",
-                                tint = ReonTokens.TextPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            }
                         }
                     }
+
+                    Spacer(Modifier.height(1.dp))
+
+                    Text(
+                        text = track.artist,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onSurfaceMuted,
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                }
+
+                // Duration
+                Text(
+                    text = track.duration,
+                    style = ReonTokens.LabelMono,
+                    fontSize = 11.5.sp,
+                    color = onSurfaceMuted
+                )
+
+                Spacer(Modifier.width(10.dp))
+
+                // Circular Play Button
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(surfaceHigh)
+                        .border(ReonSize.hairline, hairlineColor, CircleShape)
+                        .clickable { onTrackSelect(track) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = "Play",
+                        tint = onSurface,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -714,451 +996,411 @@ fun HomeContinueListeningHero(
 }
 
 // ==========================================
-// 5. Quick Access — 2×2 Bento
+// 8. "■ New Lossless Masters"
 // ==========================================
 @Composable
-fun HomeQuickAccessBento(
-    likedCount: String,
-    downloadsCount: String,
-    historyText: String,
-    flowRadioText: String,
-    onItemClick: (String) -> Unit = {}
+fun HomeNewLosslessMastersRow(
+    onMasterSelect: (String) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Text(
-            text = "Quick Access",
-            style = ReonTokens.HeadlineMedium
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // Row 1: Liked Songs & Downloads
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            QuickAccessTile(
-                title = "Liked Songs",
-                subtitle = likedCount,
-                icon = Icons.Rounded.Favorite,
-                iconTint = ReonTokens.Pink,
-                housingBg = Color(0xFFFFE8EE),
-                modifier = Modifier.weight(1f),
-                onClick = { onItemClick("liked_songs") }
-            )
-
-            QuickAccessTile(
-                title = "Downloads",
-                subtitle = downloadsCount,
-                icon = Icons.Rounded.GraphicEq,
-                iconTint = ReonTokens.SuccessGreen,
-                housingBg = Color(0xFFE6FAF3),
-                modifier = Modifier.weight(1f),
-                onClick = { onItemClick("downloads") }
-            )
-        }
-
-        Spacer(Modifier.height(ReonTokens.CardGap))
-
-        // Row 2: History & FlowRadio
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            QuickAccessTile(
-                title = "History",
-                subtitle = historyText,
-                icon = Icons.Rounded.History,
-                iconTint = ReonTokens.Primary,
-                housingBg = ReonTokens.SoftContainer,
-                modifier = Modifier.weight(1f),
-                onClick = { onItemClick("history") }
-            )
-
-            QuickAccessTile(
-                title = "FlowRadio",
-                subtitle = flowRadioText,
-                icon = Icons.Rounded.Radio,
-                iconTint = ReonTokens.Primary,
-                housingBg = ReonTokens.SoftContainer,
-                modifier = Modifier.weight(1f),
-                onClick = { onItemClick("flow_radio") }
-            )
-        }
-    }
-}
-
-@Composable
-private fun QuickAccessTile(
-    title: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconTint: Color,
-    housingBg: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
         modifier = modifier
-            .height(72.dp)
-            .reonCardShadow(shape = ReonTokens.ShapeBento)
-            .clip(ReonTokens.ShapeBento)
-            .background(ReonTokens.Surface)
-            .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeBento)
-            .reonCardPress(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // 40dp tinted rounded-square icon housing (12dp radius)
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(housingBg),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column {
-                Text(
-                    text = title,
-                    style = ReonTokens.TitleMedium.copy(fontSize = 14.sp)
-                )
-                Text(
-                    text = subtitle,
-                    style = ReonTokens.LabelSmall
-                )
-            }
-        }
-    }
-}
-
-// ==========================================
-// 6. Trending Now
-// ==========================================
-@Composable
-fun HomeTrendingNowSection(
-    tracks: List<TrackItem>,
-    onTrackClick: (TrackItem) -> Unit,
-    onSeeAll: () -> Unit
-) {
-    Column(
-        modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = ReonTokens.ScreenMargin),
+                .padding(horizontal = ReonSpacing.margin),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Trending Now", style = ReonTokens.HeadlineMedium)
-                Spacer(Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFE8EE))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(text = "🔥 HOT", color = Color(0xFFCF094C), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
+                        .size(6.dp)
+                        .background(onSurface, RoundedCornerShape(1.dp))
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "New Lossless Masters",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp
+                )
             }
+
             Text(
-                text = "See all →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onSeeAll)
+                text = "STUDIO DIRECT",
+                style = ReonTokens.LabelMono,
+                fontSize = 10.5.sp,
+                color = onSurfaceMuted
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = ReonSpacing.margin),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(tracks, key = { it.id }) { track ->
-                Column(
+            // Master 1: Monolith Sessions (2025)
+            Column(
+                modifier = Modifier
+                    .width(170.dp)
+                    .clickable { onMasterSelect("Monolith Sessions") }
+            ) {
+                Box(
                     modifier = Modifier
-                        .width(140.dp)
-                        .reonCardPress(onClick = { onTrackClick(track) })
+                        .size(170.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
                 ) {
-                    // Square art (24dp radius) with rank badge in top-left
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = "Monolith Sessions",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
                     Box(
                         modifier = Modifier
-                            .size(140.dp)
-                            .clip(ReonTokens.ShapeArt24)
-                            .background(ReonTokens.Muted)
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xD9000000))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        ProceduralAlbumArt(
-                            seed = track.artSeed,
-                            title = track.title,
-                            modifier = Modifier.fillMaxSize()
+                        Text(
+                            text = "2025",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 9.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
-
-                        // 32dp dark translucent circle (rgba(0,0,0,0.55)) with white bold rank number
-                        Box(
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.55f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "#${track.rank}",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
                     }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = track.title,
-                        style = ReonTokens.BodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${track.artist} · ${track.plays}",
-                        style = ReonTokens.BodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
+
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = "Monolith Sessions",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "Solaris & Kaelen",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceMuted,
+                    fontSize = 12.sp
+                )
+                Spacer(Modifier.height(1.dp))
+                Text(
+                    text = "8 TRACKS  •  192kHz",
+                    style = ReonTokens.LabelMono,
+                    fontSize = 9.5.sp,
+                    color = onSurfaceMuted
+                )
+            }
+
+            // Master 2: Resonance EP (2025)
+            Column(
+                modifier = Modifier
+                    .width(170.dp)
+                    .clickable { onMasterSelect("Resonance EP") }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(170.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.art_refractions),
+                        contentDescription = "Resonance EP",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xD9000000))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "2025",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 9.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = "Resonance EP",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "Aura Sound Lab",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceMuted,
+                    fontSize = 12.sp
+                )
+                Spacer(Modifier.height(1.dp))
+                Text(
+                    text = "5 TRACKS  •  DSD 128",
+                    style = ReonTokens.LabelMono,
+                    fontSize = 9.5.sp,
+                    color = onSurfaceMuted
+                )
             }
         }
     }
 }
 
 // ==========================================
-// 7. Top Charts
+// 9. "■ Artists in Residence"
 // ==========================================
 @Composable
-fun HomeTopChartsSection(
-    tracks: List<TrackItem>,
-    onTrackClick: (TrackItem) -> Unit,
-    onSeeAll: () -> Unit
+fun HomeArtistsInResidenceRow(
+    onArtistSelect: (String) -> Unit = {},
+    onFollowClick: (String) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = ReonTokens.ScreenMargin),
+                .padding(horizontal = ReonSpacing.margin),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Top Charts", style = ReonTokens.HeadlineMedium)
-                Spacer(Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(ReonTokens.SoftContainer)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(text = "Weekly", color = ReonTokens.Primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
+                        .size(6.dp)
+                        .background(onSurface, RoundedCornerShape(1.dp))
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Artists in Residence",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface,
+                    fontSize = 16.sp
+                )
             }
+
             Text(
-                text = "See all →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onSeeAll)
+                text = "ARCHIVES",
+                style = ReonTokens.LabelMono,
+                fontSize = 10.5.sp,
+                color = onSurfaceMuted
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = ReonSpacing.margin),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(tracks, key = { it.id }) { track ->
-                Box(
-                    modifier = Modifier
-                        .width(220.dp)
-                        .reonCardShadow(shape = ReonTokens.ShapeBento)
-                        .clip(ReonTokens.ShapeBento)
-                        .background(ReonTokens.Surface)
-                        .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeBento)
-                        .reonCardPress(onClick = { onTrackClick(track) })
-                        .padding(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = track.rank,
-                            style = ReonTokens.HeadlineMedium.copy(
-                                color = ReonTokens.Primary,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-
-                        Spacer(Modifier.width(10.dp))
-
+            // Artist 1: Solaris & Kaelen
+            Box(
+                modifier = Modifier
+                    .width(220.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(cardBackground)
+                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                    .clickable { onArtistSelect("Solaris & Kaelen") }
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(ReonTokens.Muted)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(surfaceHigh)
                         ) {
-                            ProceduralAlbumArt(seed = track.artSeed, title = track.title)
+                            TrackArtImage(
+                                url = getArtUrlForSeed(1),
+                                contentDescription = "Solaris & Kaelen",
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
 
                         Spacer(Modifier.width(10.dp))
 
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column {
                             Text(
-                                text = track.title,
-                                style = ReonTokens.TitleMedium.copy(fontSize = 13.sp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                text = "Solaris & Kaelen",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                fontSize = 14.sp
+                            )
+                            Spacer(Modifier.height(1.dp))
+                            Text(
+                                text = "OSLO, NORWAY",
+                                style = ReonTokens.LabelMono,
+                                fontSize = 9.sp,
+                                color = onSurfaceMuted
                             )
                             Text(
-                                text = track.artist,
-                                style = ReonTokens.BodySmall.copy(fontSize = 11.sp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                text = "14 BIT-PERFECT MASTERS",
+                                style = ReonTokens.LabelMono,
+                                fontSize = 8.5.sp,
+                                color = onSurfaceMuted
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(primaryColor)
+                                .clickable { onFollowClick("Solaris & Kaelen") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Follow",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = onPrimaryColor,
+                                fontSize = 11.5.sp
                             )
                         }
 
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(ReonTokens.SoftContainer),
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(surfaceHigh)
+                                .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(6.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = "Play",
-                                tint = ReonTokens.Primary,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = Icons.Rounded.Radio,
+                                contentDescription = "Radio",
+                                tint = onSurface,
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
                 }
             }
-        }
-    }
-}
 
-// ==========================================
-// 8. Featured Artists
-// ==========================================
-@Composable
-fun HomeFeaturedArtistsSection(
-    artists: List<ArtistItem>,
-    onArtistClick: (ArtistItem) -> Unit,
-    onFollowToggle: (String) -> Unit,
-    onDiscover: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Featured Artists", style = ReonTokens.HeadlineMedium)
-            Text(
-                text = "Discover →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onDiscover)
-            )
-        }
+            // Artist 2: Aura Sound
+            Box(
+                modifier = Modifier
+                    .width(220.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(cardBackground)
+                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                    .clickable { onArtistSelect("Aura Sound") }
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(surfaceHigh)
+                        ) {
+                            TrackArtImage(
+                                url = getArtUrlForSeed(2),
+                                contentDescription = "Aura Sound",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
 
-        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.width(10.dp))
 
-        LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            items(artists, key = { it.id }) { artist ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .width(88.dp)
-                        .reonCardPress(onClick = { onArtistClick(artist) })
-                ) {
-                    // 72dp avatar (full radius, 2dp white ring)
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .shadow(4.dp, CircleShape)
-                            .clip(CircleShape)
-                            .border(2.dp, Color.White, CircleShape)
-                            .background(ReonTokens.Muted)
-                    ) {
-                        ProceduralArtistAvatar(seed = artist.artSeed, name = artist.name)
+                        Column {
+                            Text(
+                                text = "Aura Sound",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                fontSize = 14.sp
+                            )
+                            Spacer(Modifier.height(1.dp))
+                            Text(
+                                text = "STOCKHOLM, SWEDEN",
+                                style = ReonTokens.LabelMono,
+                                fontSize = 9.sp,
+                                color = onSurfaceMuted
+                            )
+                            Text(
+                                text = "9 DSD MASTERS",
+                                style = ReonTokens.LabelMono,
+                                fontSize = 8.5.sp,
+                                color = onSurfaceMuted
+                            )
+                        }
                     }
 
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(10.dp))
 
-                    Text(
-                        text = artist.name,
-                        style = ReonTokens.LabelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        text = artist.genre,
-                        style = ReonTokens.LabelSmall.copy(fontSize = 10.sp),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    // Follow pill button
                     Box(
                         modifier = Modifier
-                            .clip(CircleShape)
-                            .background(if (artist.isFollowing) ReonTokens.Primary else Color.Transparent)
-                            .border(
-                                1.dp,
-                                if (artist.isFollowing) ReonTokens.Primary else ReonTokens.Hairline,
-                                CircleShape
-                            )
-                            .clickable { onFollowToggle(artist.id) }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(primaryColor)
+                            .clickable { onFollowClick("Aura Sound") },
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (artist.isFollowing) "Following" else "+ Follow",
-                            color = if (artist.isFollowing) Color.White else ReonTokens.Primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold
+                            text = "Follow",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = onPrimaryColor,
+                            fontSize = 11.5.sp
                         )
                     }
                 }
@@ -1168,29 +1410,26 @@ fun HomeFeaturedArtistsSection(
 }
 
 // ==========================================
-// 9. Artist of the Week (Editorial Bento)
+// 10. "☵ REON Acoustic Architecture" Telemetry Card
 // ==========================================
 @Composable
-fun HomeArtistOfTheWeekEditorial(
-    headline: String,
-    description: String,
-    tag: String,
-    onReadStory: () -> Unit
+fun HomeTelemetryArchitectureCard(
+    modifier: Modifier = Modifier
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-            .shadow(12.dp, ReonTokens.ShapeHero, ambientColor = Color(0x330057FF), spotColor = Color(0x400057FF))
-            .clip(ReonTokens.ShapeHero)
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(Color(0xFF0057FF), Color(0xFF0038B8))
-                )
-            )
-            .border(1.dp, Color(0x40FFFFFF), ReonTokens.ShapeHero)
-            .padding(20.dp)
-            .testTag("artist_of_week_card")
+            .padding(horizontal = ReonSpacing.margin, vertical = 10.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(cardBackground)
+            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(14.dp))
+            .padding(14.dp)
     ) {
         Column {
             Row(
@@ -1199,441 +1438,82 @@ fun HomeArtistOfTheWeekEditorial(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color(0x2EFFFFFF))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "EXCLUSIVE INTERVIEW",
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Tune,
+                        contentDescription = null,
+                        tint = onSurface,
+                        modifier = Modifier.size(15.dp)
+                    )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "5 min read",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 9.sp
+                        text = "REON Acoustic Architecture",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = onSurface,
+                        fontSize = 13.5.sp
                     )
                 }
 
                 Text(
-                    text = tag,
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    text = "CORE 3.4.1",
+                    style = ReonTokens.LabelMono,
+                    fontSize = 10.sp,
+                    color = onSurfaceMuted
                 )
             }
 
             Spacer(Modifier.height(10.dp))
 
+            // 3-Column Tiles
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = headline,
-                        style = ReonTokens.HeadlineMedium.copy(color = Color.White, fontSize = 18.sp)
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    Text(
-                        text = description,
-                        style = ReonTokens.BodySmall.copy(color = Color.White.copy(alpha = 0.85f)),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(Modifier.width(14.dp))
-
-                // 72dp artist image thumbnail with 20dp radius
+                // Tile 1: SIGNAL PATH
                 Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(ReonTokens.ShapeArt20)
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), ReonTokens.ShapeArt20)
-                ) {
-                    ProceduralAlbumArt(seed = 999, title = "ISOxo Knock2")
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            // "Read Story →" white pill button
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(bounded = true, color = ReonTokens.Primary.copy(alpha = 0.2f)),
-                        onClick = onReadStory
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .testTag("read_story_button")
-            ) {
-                Text(
-                    text = "Read story →",
-                    color = ReonTokens.Primary,
-                    style = ReonTokens.LabelLarge.copy(fontSize = 12.sp)
-                )
-            }
-        }
-    }
-}
-
-// ==========================================
-// 10. New Releases
-// ==========================================
-@Composable
-fun HomeNewReleasesSection(
-    releases: List<TrackItem>,
-    onReleaseClick: (TrackItem) -> Unit,
-    onFreshDrops: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "New Releases", style = ReonTokens.HeadlineMedium)
-            Text(
-                text = "Fresh Drops →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onFreshDrops)
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // 2-column grid
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            releases.take(2).forEach { item ->
-                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .reonCardPress(onClick = { onReleaseClick(item) })
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(ReonTokens.ShapeArt24)
-                            .background(ReonTokens.Muted)
-                    ) {
-                        ProceduralAlbumArt(seed = item.artSeed, title = item.title, modifier = Modifier.fillMaxSize())
-
-                        // Tiny "New" badge in top-left
-                        Box(
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = "New",
-                                color = ReonTokens.Primary,
-                                style = ReonTokens.LabelSmall.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-
-                        // Play button
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(ReonTokens.Primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = item.title,
-                        style = ReonTokens.TitleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = item.artist,
-                        style = ReonTokens.BodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 11. Moods & Genres
-// ==========================================
-@Composable
-fun HomeMoodsAndGenresSection(
-    moods: List<MoodGenreItem>,
-    selectedMood: String,
-    onMoodSelect: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Moods & Genres", style = ReonTokens.HeadlineMedium)
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(ReonTokens.SoftContainer)
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
-            ) {
-                Text(text = selectedMood, color = ReonTokens.Primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = ReonTokens.ScreenMargin),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.ChipGap)
-        ) {
-            items(moods, key = { it.id }) { mood ->
-                val isSelected = mood.isSelected || mood.label == selectedMood
-                Box(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isSelected) ReonTokens.Primary else Color(mood.backgroundColorHex)
-                        )
-                        .clickable { onMoodSelect(mood.label) }
-                        .padding(horizontal = 16.dp),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(surfaceHigh)
+                        .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "${mood.emoji}  ${mood.label}",
-                        color = if (isSelected) Color.White else Color(mood.textColorHex),
-                        style = ReonTokens.LabelLarge
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("SIGNAL PATH", style = ReonTokens.LabelMono, fontSize = 8.5.sp, color = onSurfaceMuted)
+                        Spacer(Modifier.height(2.dp))
+                        Text("DIRECT DSD", style = ReonTokens.LabelMono, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = onSurface)
+                    }
                 }
-            }
-        }
-    }
-}
 
-// ==========================================
-// 12. Featured Playlists
-// ==========================================
-@Composable
-fun HomeFeaturedPlaylistsSection(
-    playlists: List<PlaylistItem>,
-    onPlaylistClick: (PlaylistItem) -> Unit,
-    onExplore: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Featured Playlists", style = ReonTokens.HeadlineMedium)
-            Text(
-                text = "Explore →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onExplore)
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            playlists.take(2).forEach { pl ->
+                // Tile 2: LATENCY
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .reonCardShadow(shape = ReonTokens.ShapeBento)
-                        .clip(ReonTokens.ShapeBento)
-                        .background(ReonTokens.Surface)
-                        .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeBento)
-                        .reonCardPress(onClick = { onPlaylistClick(pl) })
-                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(surfaceHigh)
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1.1f)
-                                .clip(ReonTokens.ShapeInnerArt)
-                                .background(ReonTokens.Muted)
-                        ) {
-                            ProceduralAlbumArt(seed = pl.artSeed, title = pl.title, modifier = Modifier.fillMaxSize())
-
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Primary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.PlayArrow,
-                                    contentDescription = "Play",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(
-                            text = pl.title,
-                            style = ReonTokens.TitleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "${pl.trackCount} · ${pl.duration}",
-                            style = ReonTokens.BodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("LATENCY", style = ReonTokens.LabelMono, fontSize = 8.5.sp, color = onSurfaceMuted)
+                        Spacer(Modifier.height(2.dp))
+                        Text("0.8 MS", style = ReonTokens.LabelMono, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = onSurface)
                     }
                 }
-            }
-        }
-    }
-}
 
-// ==========================================
-// 13. Made For You
-// ==========================================
-@Composable
-fun HomeMadeForYouSection(
-    mixes: List<DailyMixItem>,
-    onMixClick: (DailyMixItem) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Made For You", style = ReonTokens.HeadlineMedium)
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(ReonTokens.SoftContainer)
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(ReonTokens.Primary))
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = "DAILY UPDATED", color = ReonTokens.Primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            mixes.take(2).forEach { mix ->
-                val gradient = if (mix.isPrimaryGradient) ReonTokens.DailyMixGradient1 else ReonTokens.DailyMixGradient2
+                // Tile 3: DAC SYNC
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(140.dp)
-                        .shadow(8.dp, ReonTokens.ShapeBento, ambientColor = ReonTokens.Primary, spotColor = ReonTokens.Primary)
-                        .clip(ReonTokens.ShapeBento)
-                        .background(gradient)
-                        .border(1.dp, Color(0x33FFFFFF), ReonTokens.ShapeBento)
-                        .reonCardPress(onClick = { onMixClick(mix) })
-                        .padding(14.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(surfaceHigh)
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = mix.mixNumber,
-                                color = Color.White.copy(alpha = 0.8f),
-                                style = ReonTokens.LabelSmall
-                            )
-                            Icon(
-                                imageVector = Icons.Rounded.GraphicEq,
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = mix.title,
-                                style = ReonTokens.HeadlineMedium.copy(color = Color.White, fontSize = 18.sp)
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = mix.subtitle,
-                                style = ReonTokens.BodySmall.copy(color = Color.White.copy(alpha = 0.85f)),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("DAC SYNC", style = ReonTokens.LabelMono, fontSize = 8.5.sp, color = onSurfaceMuted)
+                        Spacer(Modifier.height(2.dp))
+                        Text("LOCKED", style = ReonTokens.LabelMono, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = onSurface)
                     }
                 }
             }
@@ -1641,684 +1521,13 @@ fun HomeMadeForYouSection(
     }
 }
 
-// ==========================================
-// 14. Because You Played
-// ==========================================
-@Composable
-fun HomeBecauseYouPlayedSection(
-    artistName: String,
-    matchBadge: String,
-    tracks: List<TrackItem>,
-    onTrackClick: (TrackItem) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Because You Played", style = ReonTokens.HeadlineMedium)
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color(0xFFE6FAF3))
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(ReonTokens.SuccessGreen))
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = matchBadge, color = ReonTokens.SuccessGreen, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Text(
-            text = "Similar to $artistName",
-            style = ReonTokens.BodySmall
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            tracks.take(2).forEach { track ->
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .reonCardPress(onClick = { onTrackClick(track) })
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(ReonTokens.ShapeArt24)
-                            .background(ReonTokens.Muted)
-                    ) {
-                        ProceduralAlbumArt(seed = track.artSeed, title = track.title, modifier = Modifier.fillMaxSize())
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = track.title,
-                        style = ReonTokens.TitleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = track.artist,
-                        style = ReonTokens.BodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 15. Editor's Picks
-// ==========================================
-@Composable
-fun HomeEditorsPicksSection(
-    headline: String,
-    description: String,
-    onReadStory: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Editor's Picks", style = ReonTokens.HeadlineMedium)
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(ReonTokens.SoftContainer)
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(ReonTokens.Primary))
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = "CURATED", color = ReonTokens.Primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // Full-width editorial bento card: 28dp radius, white fill, hairline border
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .reonCardShadow(shape = ReonTokens.ShapeHero)
-                .clip(ReonTokens.ShapeHero)
-                .background(ReonTokens.Surface)
-                .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeHero)
-                .padding(14.dp)
-        ) {
-            Column {
-                // Large 200dp hero image (20dp radius, top)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(ReonTokens.ShapeArt20)
-                        .background(Color(0xFF0C1326))
-                ) {
-                    ProceduralTokyoSkylineArt(modifier = Modifier.fillMaxSize())
-
-                    Box(
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(text = "SPOTLIGHT", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Tiny "DEEP FOCUS" blue pill below the image
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(ReonTokens.SoftContainer)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text(text = "DEEP FOCUS", color = ReonTokens.Primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = headline,
-                    style = ReonTokens.HeadlineMedium.copy(fontSize = 18.sp)
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text = description,
-                    style = ReonTokens.BodySmall
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                Text(
-                    text = "Read Story →",
-                    style = ReonTokens.LabelLarge,
-                    modifier = Modifier.clickable(onClick = onReadStory)
-                )
-            }
-        }
-    }
-}
-
-// ==========================================
-// 16. Recently Played
-// ==========================================
-@Composable
-fun HomeRecentlyPlayedSection(
-    tracks: List<TrackItem>,
-    onTrackClick: (TrackItem) -> Unit,
-    onHistoryClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Recently Played", style = ReonTokens.HeadlineMedium)
-            Text(
-                text = "History →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onHistoryClick)
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            tracks.take(3).forEach { track ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .reonCardShadow(shape = RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(ReonTokens.Surface)
-                        .border(1.dp, ReonTokens.Hairline, RoundedCornerShape(16.dp))
-                        .reonCardPress(onClick = { onTrackClick(track) })
-                        .padding(horizontal = 12.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 44dp album art (10dp radius)
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(ReonTokens.Muted)
-                        ) {
-                            if (track.id == "rp1") {
-                                Image(
-                                    painter = painterResource(R.drawable.art_refractions),
-                                    contentDescription = track.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                ProceduralAlbumArt(seed = track.artSeed, title = track.title)
-                            }
-                        }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = track.title,
-                                style = ReonTokens.BodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = track.artist,
-                                style = ReonTokens.BodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        if (track.isPlaying) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Playing",
-                                    color = ReonTokens.Primary,
-                                    style = ReonTokens.LabelSmall.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                AnimatedEqualizerBars()
-                            }
-                        } else {
-                            Text(
-                                text = track.duration,
-                                style = ReonTokens.DurationText
-                            )
-                        }
-
-                        Spacer(Modifier.width(8.dp))
-
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = "Options",
-                            tint = ReonTokens.TextTertiary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 17. Rediscover
-// ==========================================
-@Composable
-fun HomeRediscoverSection(
-    tracks: List<TrackItem>,
-    onTrackClick: (TrackItem) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Rediscover", style = ReonTokens.HeadlineMedium)
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(ReonTokens.Muted)
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Text(text = "3 forgotten tracks", color = ReonTokens.TextSecondary, fontSize = 9.sp)
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            tracks.take(2).forEach { track ->
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .reonCardPress(onClick = { onTrackClick(track) })
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(ReonTokens.ShapeArt24)
-                            .background(ReonTokens.Muted)
-                    ) {
-                        ProceduralAlbumArt(seed = track.artSeed, title = track.title, modifier = Modifier.fillMaxSize())
-
-                        // Subtle grayscale overlay
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.25f))
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.6f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(text = "Played 3mo ago", color = Color.White, fontSize = 8.sp)
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = track.title,
-                        style = ReonTokens.TitleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = track.artist,
-                        style = ReonTokens.BodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 18. Live & Upcoming
-// ==========================================
-@Composable
-fun HomeLiveUpcomingSection(
-    events: List<LiveEventItem>,
-    onEventClick: (LiveEventItem) -> Unit,
-    onNearYou: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Live & Upcoming", style = ReonTokens.HeadlineMedium)
-            Text(
-                text = "Near You →",
-                style = ReonTokens.LabelLarge,
-                modifier = Modifier.clickable(onClick = onNearYou)
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ReonTokens.CardGap)
-        ) {
-            events.take(2).forEach { event ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .reonCardShadow(shape = ReonTokens.ShapeBento)
-                        .clip(ReonTokens.ShapeBento)
-                        .background(ReonTokens.Surface)
-                        .border(1.dp, ReonTokens.Hairline, ReonTokens.ShapeBento)
-                        .reonCardPress(onClick = { onEventClick(event) })
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Top-left tiny LIVE or UPCOMING pink pill
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFFFE8EE))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = event.statusBadge,
-                                    color = ReonTokens.Pink,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            // Artist thumbnail as small circle
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Primary)
-                            ) {
-                                ProceduralArtistAvatar(seed = event.artSeed, name = event.artist)
-                            }
-                        }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        Text(
-                            text = event.artist,
-                            style = ReonTokens.TitleMedium.copy(fontSize = 13.sp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "${event.venue} · ${event.city}",
-                            style = ReonTokens.BodySmall.copy(fontSize = 10.sp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(Modifier.height(10.dp))
-
-                        // Date chip bottom-right in blue
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Primary)
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "${event.dateMonth} ${event.dateDay}",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// Graphics, Equalizer & Procedural Artwork Helpers
-// ==========================================
-
-@Composable
-fun AnimatedEqualizerBars() {
-    val transition = rememberInfiniteTransition(label = "eq_anim")
-    val bar1 by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(tween(450, easing = LinearEasing), RepeatMode.Reverse),
-        label = "b1"
-    )
-    val bar2 by transition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 0.3f,
-        animationSpec = infiniteRepeatable(tween(350, easing = LinearEasing), RepeatMode.Reverse),
-        label = "b2"
-    )
-    val bar3 by transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(tween(550, easing = LinearEasing), RepeatMode.Reverse),
-        label = "b3"
-    )
-
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.height(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .width(2.5.dp)
-                .height((14 * bar1).dp)
-                .clip(CircleShape)
-                .background(ReonTokens.Primary)
-        )
-        Box(
-            modifier = Modifier
-                .width(2.5.dp)
-                .height((14 * bar2).dp)
-                .clip(CircleShape)
-                .background(ReonTokens.Primary)
-        )
-        Box(
-            modifier = Modifier
-                .width(2.5.dp)
-                .height((14 * bar3).dp)
-                .clip(CircleShape)
-                .background(ReonTokens.Primary)
-        )
-    }
-}
-
-@Composable
-fun ProceduralAlbumArt(
-    seed: Int,
-    title: String,
-    modifier: Modifier = Modifier
-) {
-    val palette = remember(seed) {
-        when (seed % 5) {
-            0 -> listOf(Color(0xFF0057FF), Color(0xFF0038B8), Color(0xFF0A0F24))
-            1 -> listOf(Color(0xFF00C48C), Color(0xFF0057FF), Color(0xFF071B26))
-            2 -> listOf(Color(0xFFFF3B6B), Color(0xFF7A3FE0), Color(0xFF1E0A24))
-            3 -> listOf(Color(0xFF22D3EE), Color(0xFF0057FF), Color(0xFF061426))
-            else -> listOf(Color(0xFF6366F1), Color(0xFF2563EB), Color(0xFF0B1020))
-        }
-    }
-
-    Canvas(modifier = modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = palette,
-                center = Offset(w * 0.4f, h * 0.3f),
-                radius = w * 0.85f
-            )
-        )
-
-        // Geometric cybernetic rings
-        drawCircle(
-            color = Color.White.copy(alpha = 0.12f),
-            radius = w * 0.35f,
-            center = Offset(w * 0.5f, h * 0.5f),
-            style = Stroke(width = 2.dp.toPx())
-        )
-        drawCircle(
-            color = Color.White.copy(alpha = 0.20f),
-            radius = w * 0.22f,
-            center = Offset(w * 0.5f, h * 0.5f),
-            style = Stroke(width = 1.dp.toPx())
-        )
-
-        // Dynamic light line
-        drawLine(
-            color = Color.White.copy(alpha = 0.25f),
-            start = Offset(0f, h * 0.7f),
-            end = Offset(w, h * 0.3f),
-            strokeWidth = 1.5.dp.toPx()
-        )
-    }
-}
-
-@Composable
-fun ProceduralArtistAvatar(
-    seed: Int,
-    name: String,
-    modifier: Modifier = Modifier
-) {
-    val colors = remember(seed) {
-        when (seed % 4) {
-            0 -> listOf(Color(0xFF0057FF), Color(0xFF0038B8))
-            1 -> listOf(Color(0xFF7A3FE0), Color(0xFF0057FF))
-            2 -> listOf(Color(0xFFFF3B6B), Color(0xFF0038B8))
-            else -> listOf(Color(0xFF00C48C), Color(0xFF0057FF))
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Brush.linearGradient(colors)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = name.take(1).uppercase(),
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp
-        )
-    }
-}
-
-@Composable
-fun ProceduralTokyoSkylineArt(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-
-        // Dark atmospheric Tokyo gradient
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF060913), Color(0xFF0E1A38), Color(0xFF0038B8))
-            )
-        )
-
-        // Neon ambient glow in center
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color(0x990057FF), Color(0x3322D3EE), Color.Transparent),
-                center = Offset(w * 0.5f, h * 0.45f),
-                radius = w * 0.6f
-            )
-        )
-
-        // Silhouette futuristic grid
-        for (i in 0..8) {
-            val x = (w / 8) * i
-            drawLine(
-                color = Color.White.copy(alpha = 0.08f),
-                start = Offset(x, h * 0.5f),
-                end = Offset(x, h),
-                strokeWidth = 1.dp.toPx()
-            )
-        }
+private fun getArtUrlForSeed(seed: Int): String {
+    return when (seed % 6) {
+        1 -> "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=300&q=80"
+        2 -> "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=300&q=80"
+        3 -> "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300&q=80"
+        4 -> "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80"
+        5 -> "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80"
+        else -> "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&q=80"
     }
 }

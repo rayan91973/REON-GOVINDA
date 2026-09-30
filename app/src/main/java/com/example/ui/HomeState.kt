@@ -122,7 +122,7 @@ data class TopMatchResult(
 )
 
 enum class HomeTab {
-    Home, Search, Downloads
+    Home, Search, Library, Analytics, Settings
 }
 
 @Immutable
@@ -164,6 +164,9 @@ data class HomeState(
 
     // Liked Songs Detail View State
     val isLikedSongsOpen: Boolean = false,
+
+    // Downloads Vault View State
+    val isDownloadsOpen: Boolean = false,
 
     // Listening History Timeline State
     val isHistoryOpen: Boolean = false,

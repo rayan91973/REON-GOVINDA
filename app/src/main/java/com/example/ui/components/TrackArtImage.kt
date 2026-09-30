@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -24,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.example.ui.theme.ReonColors
+import com.example.ui.ReonTokens
 
 @Composable
 fun TrackArtImage(
@@ -39,7 +40,7 @@ fun TrackArtImage(
     Box(
         modifier = modifier.background(
             Brush.linearGradient(
-                listOf(ReonColors.SurfaceMuted, ReonColors.ElectricBlueSoft)
+                listOf(Color(0xFFF3F3F5), Color(0xFFEEEEF0))
             )
         ),
         contentAlignment = Alignment.Center
@@ -48,12 +49,11 @@ fun TrackArtImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(url)
                 .crossfade(true)
-                .crossfade(250)
+                .crossfade(200)
                 .allowHardware(true)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
-                // Downsample to appropriate thumbnail dimensions to avoid heavy memory allocation
-                .size(128, 128)
+                .size(160, 160)
                 .build(),
             contentDescription = contentDescription,
             contentScale = contentScale,
@@ -64,15 +64,38 @@ fun TrackArtImage(
                 .alpha(fadeAlpha)
         )
         
-        // Show subtle emblem in center as fallback if image isn't loaded yet/fails
+        // Quiet architectural placeholder glyph
         if (!isSuccess) {
             Icon(
                 imageVector = Icons.Rounded.MusicNote,
                 contentDescription = null,
-                tint = ReonColors.ElectricBlue.copy(alpha = 0.25f),
-                modifier = Modifier.size(24.dp)
+                tint = ReonTokens.InkLow.copy(alpha = 0.4f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
 }
 
+@Composable
+fun TrackArtImage(
+    seed: Int,
+    size: androidx.compose.ui.unit.Dp,
+    shape: androidx.compose.ui.graphics.Shape,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(shape)
+            .background(Color(0xFFE4E4E7)),
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(com.example.R.drawable.art_refractions),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}

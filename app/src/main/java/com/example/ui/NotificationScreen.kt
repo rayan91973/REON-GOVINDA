@@ -1,13 +1,9 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,34 +15,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.BookmarkBorder
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.DownloadDone
-import androidx.compose.material.icons.rounded.ElectricBolt
-import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,232 +49,528 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.TrackArtImage
+import com.example.ui.theme.reonExtras
+
+data class NotificationItemModel(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val timeAgo: String,
+    val isUnread: Boolean = false,
+    val badge: String = "",
+    val tags: List<String> = emptyList(),
+    val actionType: String = "none", // "play", "download", "tune_in", "pre_save"
+    val actionText: String = "",
+    val artSeed: Int = 1,
+    val isSystemIcon: Boolean = false,
+    val iconType: String = ""
+)
+
+data class NotificationGroupModel(
+    val groupTitle: String,
+    val rightTag: String,
+    val items: List<NotificationItemModel>
+)
 
 /**
- * REON Notification Screen
- * Modern Electric Horizon layout with category tabs, unread count badge,
- * audio engine alerts, master releases, and actionable card modules.
+ * REON — Notifications Screen
+ * Pixel-perfect match to user's uploaded reference UI image (Image 2):
+ * - Header: Back (<), "Notifications", DoneAll (✓✓), Settings gear
+ * - Signal Feed Status: "● SIGNAL FEED: 192kHz BIT-DIRECT ACTIVE", "6 EVENTS"
+ * - Filter Pills: "All 6" (solid black), "Releases 3", "Lossless Drops 2", "System 1"
+ * - Queue Priority: "QUEUE PRIORITY: RECENCY", "✓ Mark all read"
+ * - Groups:
+ *   - "TODAY" (2 UNREAD): Solaris & Kaelen master release (Play Master), Lossless Vault Drop (Download)
+ *   - "YESTERDAY" (ARCHIVED): Aura Sound Lab is Live (Tune In), Firmware & DAC Engine Sync (v3.4.1 PATCH)
+ *   - "EARLIER THIS WEEK" (VERIFIED): New Album Pre-save (Pre-save), Storage Allocation Synced (4.2 GB NVMe)
+ * - Telemetry & Signal Settings Card: "Configure bit-depth threshold notifications..." + "Manage >"
  */
 @Composable
 fun NotificationScreen(
     state: HomeState,
-    onBackClick: () -> Unit,
-    onTrackSelect: (TrackItem) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenDownloads: () -> Unit,
-    onMarkAsRead: (String) -> Unit,
-    onMarkAllAsRead: () -> Unit,
-    onClearAll: () -> Unit,
-    onDeleteNotification: (String) -> Unit,
+    onBackClick: () -> Unit = {},
+    onTrackSelect: (TrackItem) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onOpenDownloads: () -> Unit = {},
+    onMarkAsRead: (String) -> Unit = {},
+    onMarkAllAsRead: () -> Unit = {},
+    onClearAll: () -> Unit = {},
+    onDeleteNotification: (String) -> Unit = {},
+    onShowToast: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
-    var selectedFilter by remember { mutableStateOf("All") }
-    val filterTabs = listOf("All", "Releases", "Audio Engine", "Downloads", "Live", "System")
 
-    val filteredNotifications = remember(state.notifications, selectedFilter) {
-        when (selectedFilter) {
-            "Releases" -> state.notifications.filter { it.category.equals("RELEASE", ignoreCase = true) }
-            "Audio Engine" -> state.notifications.filter { it.category.equals("AUDIO ENGINE", ignoreCase = true) }
-            "Downloads" -> state.notifications.filter { it.category.equals("DOWNLOADS", ignoreCase = true) }
-            "Live" -> state.notifications.filter { it.category.equals("LIVE", ignoreCase = true) }
-            "System" -> state.notifications.filter { it.category.equals("SYSTEM", ignoreCase = true) }
-            else -> state.notifications
-        }
-    }
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
 
-    val unreadCount = state.notifications.count { !it.isRead }
+    var selectedFilter by remember { mutableStateOf("All 6") }
+    val filters = listOf("All 6", "Releases 3", "Lossless Drops 2", "System 1")
+
+    val groups = remember { sampleNotificationGroups() }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(ReonTokens.Canvas)
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .testTag("reon_notification_screen")
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 4.dp, bottom = 180.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentPadding = PaddingValues(top = 4.dp, bottom = 160.dp)
         ) {
-            // 1. Top Navigation Bar
-            item(key = "notification_top_bar") {
+            // 1. Top Bar (< Notifications | DoneAll, Settings >)
+            item(key = "notif_top_bar") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = ReonTokens.ScreenMargin, vertical = 8.dp),
+                        .padding(horizontal = ReonSpacing.margin, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         IconButton(
                             onClick = onBackClick,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(ReonTokens.Muted)
+                            modifier = Modifier.size(38.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "Back",
-                                tint = ReonTokens.TextPrimary,
+                                tint = onSurface,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
 
-                        Spacer(Modifier.width(12.dp))
-
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Activity & Alerts",
-                                    style = ReonTokens.TitleMedium.copy(
-                                        fontSize = 17.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                if (unreadCount > 0) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(ReonTokens.Primary)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = "$unreadCount NEW",
-                                            style = ReonTokens.LabelSmall.copy(
-                                                color = Color.White,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                            Text(
-                                text = "REON UNIFIED ENGINE UPDATES",
-                                style = ReonTokens.LabelSmall.copy(
-                                    fontSize = 8.sp,
-                                    letterSpacing = 1.5.sp,
-                                    color = ReonTokens.TextTertiary
-                                )
-                            )
-                        }
+                        Text(
+                            text = "Notifications",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface,
+                            fontSize = 19.sp
+                        )
                     }
 
-                    // Action Icons: Mark all as read & Clear all
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        if (unreadCount > 0) {
-                            IconButton(
-                                onClick = onMarkAllAsRead,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.SoftContainer)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.DoneAll,
-                                    contentDescription = "Mark all as read",
-                                    tint = ReonTokens.Primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = {
+                                onMarkAllAsRead()
+                                onShowToast("All notifications marked as read")
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.DoneAll,
+                                contentDescription = "Mark all read",
+                                tint = onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
 
-                        if (state.notifications.isNotEmpty()) {
-                            IconButton(
-                                onClick = onClearAll,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Muted)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.DeleteOutline,
-                                    contentDescription = "Clear all notifications",
-                                    tint = ReonTokens.TextSecondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = onOpenSettings,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = "Settings",
+                                tint = onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                 }
             }
 
-            // 2. Filter Tabs
-            item(key = "notification_filter_tabs") {
-                LazyRow(
+            // 2. Signal Feed Status Banner (● SIGNAL FEED: 192kHz BIT-DIRECT ACTIVE | 6 EVENTS)
+            item(key = "notif_signal_banner") {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentPadding = PaddingValues(horizontal = ReonTokens.ScreenMargin),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = ReonSpacing.margin, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(surfaceHigh)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    items(filterTabs) { tab ->
-                        val isSelected = selectedFilter == tab
-                        val count = when (tab) {
-                            "All" -> state.notifications.size
-                            "Releases" -> state.notifications.count { it.category.equals("RELEASE", ignoreCase = true) }
-                            "Audio Engine" -> state.notifications.count { it.category.equals("AUDIO ENGINE", ignoreCase = true) }
-                            "Downloads" -> state.notifications.count { it.category.equals("DOWNLOADS", ignoreCase = true) }
-                            "Live" -> state.notifications.count { it.category.equals("LIVE", ignoreCase = true) }
-                            "System" -> state.notifications.count { it.category.equals("SYSTEM", ignoreCase = true) }
-                            else -> 0
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(onSurface)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "SIGNAL FEED: 192kHz BIT-DIRECT ACTIVE",
+                                style = ReonTokens.LabelMono,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
+                                letterSpacing = 0.5.sp
+                            )
                         }
 
+                        Text(
+                            text = "6 EVENTS",
+                            style = ReonTokens.LabelMono,
+                            fontSize = 10.sp,
+                            color = onSurfaceMuted,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            // 3. Filter Pills (All 6, Releases 3, Lossless Drops 2, System 1)
+            item(key = "notif_filter_chips") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = ReonSpacing.margin, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    filters.forEach { filter ->
+                        val isSelected = filter == selectedFilter
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) ReonTokens.TextPrimary else Color.White)
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isSelected) primaryColor else surfaceHigh)
                                 .border(
-                                    width = 1.dp,
-                                    color = if (isSelected) Color.Transparent else ReonTokens.Hairline,
-                                    shape = RoundedCornerShape(12.dp)
+                                    ReonSize.hairline,
+                                    if (isSelected) primaryColor else hairlineColor,
+                                    RoundedCornerShape(16.dp)
                                 )
-                                .clickable { selectedFilter = tab }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                                .clickable { selectedFilter = filter }
+                                .padding(horizontal = 14.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = tab,
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = if (isSelected) Color.White else ReonTokens.TextPrimary,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 12.sp
-                                    )
-                                )
-                                if (count > 0) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (isSelected) ReonTokens.Primary else ReonTokens.Muted
+                            Text(
+                                text = filter,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isSelected) onPrimaryColor else onSurface,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Queue Priority: Recency | ✓ Mark all read
+            item(key = "notif_priority_bar") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ReonSpacing.margin, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "QUEUE PRIORITY: RECENCY",
+                        style = ReonTokens.LabelMono,
+                        fontSize = 10.5.sp,
+                        color = onSurfaceMuted,
+                        letterSpacing = 0.5.sp
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable {
+                            onMarkAllAsRead()
+                            onShowToast("Marked all read")
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = onSurface,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Mark all read",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = onSurface,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            // 5. Timeline Notification Items
+            groups.forEach { group ->
+                item(key = "notif_group_${group.groupTitle}") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = ReonSpacing.margin,
+                                end = ReonSpacing.margin,
+                                top = 12.dp,
+                                bottom = 4.dp
+                            ),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = group.groupTitle,
+                            style = ReonTokens.LabelMono,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface,
+                            letterSpacing = 0.5.sp
+                        )
+
+                        Text(
+                            text = group.rightTag,
+                            style = ReonTokens.LabelMono,
+                            fontSize = 10.5.sp,
+                            color = onSurfaceMuted,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                items(group.items, key = { it.id }) { item ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = ReonSpacing.margin, vertical = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(cardBackground)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                // Thumbnail / Icon Container
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(surfaceHigh)
+                                ) {
+                                    if (item.isSystemIcon) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = if (item.iconType == "dsp") Icons.Rounded.Memory else Icons.Rounded.SaveAlt,
+                                                contentDescription = null,
+                                                tint = onSurface,
+                                                modifier = Modifier.size(22.dp)
                                             )
-                                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                                        }
+                                    } else {
+                                        TrackArtImage(
+                                            url = getArtUrlForSeed(item.artSeed),
+                                            contentDescription = item.title,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+
+                                    // Badge in artwork
+                                    if (item.badge.isNotEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .fillMaxWidth()
+                                                .background(Color(0xD9000000))
+                                                .padding(vertical = 1.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = item.badge,
+                                                style = ReonTokens.LabelMono,
+                                                fontSize = 7.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (item.badge == "LIVE") Color.Red else Color.White
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.width(12.dp))
+
+                                // Title, Subtitle, Time & Unread Indicator
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "$count",
-                                            style = ReonTokens.LabelSmall.copy(
-                                                color = if (isSelected) Color.White else ReonTokens.TextSecondary,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            text = item.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = onSurface,
+                                            fontSize = 14.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
                                         )
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = item.timeAgo,
+                                                style = ReonTokens.LabelMono,
+                                                fontSize = 10.5.sp,
+                                                color = onSurfaceMuted
+                                            )
+                                            if (item.isUnread) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(5.dp)
+                                                        .clip(CircleShape)
+                                                        .background(onSurface)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(Modifier.height(3.dp))
+
+                                    Text(
+                                        text = item.subtitle,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = onSurfaceMuted,
+                                        fontSize = 12.sp,
+                                        lineHeight = 16.sp
+                                    )
+                                }
+                            }
+
+                            // Tags & Action Button Row
+                            if (item.tags.isNotEmpty() || item.actionType != "none") {
+                                Spacer(Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Tags on Left
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        item.tags.forEach { tag ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(surfaceHigh)
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = tag,
+                                                    style = ReonTokens.LabelMono,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = onSurfaceMuted
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Action Button on Right
+                                    when (item.actionType) {
+                                        "play" -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .height(30.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(primaryColor)
+                                                    .clickable { onTrackSelect(TrackItem("nt_sp", item.title, "Solaris & Kaelen", "Master", "4:18", artSeed = 1)) }
+                                                    .padding(horizontal = 10.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = null, tint = onPrimaryColor, modifier = Modifier.size(13.dp))
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(text = item.actionText, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = onPrimaryColor, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
+                                        "download" -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(30.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(surfaceHigh)
+                                                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(6.dp))
+                                                    .clickable { onOpenDownloads() },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(imageVector = Icons.Rounded.Download, contentDescription = "Download", tint = onSurface, modifier = Modifier.size(15.dp))
+                                            }
+                                        }
+                                        "tune_in" -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .height(30.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(surfaceHigh)
+                                                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(6.dp))
+                                                    .clickable { onShowToast("Tuning in to Live Stream") }
+                                                    .padding(horizontal = 10.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(imageVector = Icons.Rounded.Radio, contentDescription = null, tint = onSurface, modifier = Modifier.size(13.dp))
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(text = item.actionText, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = onSurface, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
+                                        "pre_save" -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .height(30.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(surfaceHigh)
+                                                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(6.dp))
+                                                    .clickable { onShowToast("Pre-saved Monolith Variations Pt. III") }
+                                                    .padding(horizontal = 10.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(imageVector = Icons.Rounded.BookmarkBorder, contentDescription = null, tint = onSurface, modifier = Modifier.size(13.dp))
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(text = item.actionText, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = onSurface, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -289,296 +579,189 @@ fun NotificationScreen(
                 }
             }
 
-            item(key = "spacer_feed") {
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // 3. Notification Feed Items or Empty State
-            if (filteredNotifications.isEmpty()) {
-                item(key = "notification_empty_state") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = ReonTokens.ScreenMargin, vertical = 48.dp),
-                        contentAlignment = Alignment.Center
+            // 6. Telemetry & Signal Settings Card
+            item(key = "notif_settings_card") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ReonSpacing.margin, vertical = 10.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(surfaceHigh)
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.SoftContainer),
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(cardBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.NotificationsOff,
+                                    imageVector = Icons.Rounded.Tune,
                                     contentDescription = null,
-                                    tint = ReonTokens.Primary,
-                                    modifier = Modifier.size(32.dp)
+                                    tint = onSurface,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.width(10.dp))
 
-                            Text(
-                                text = "All Caught Up",
-                                style = ReonTokens.TitleMedium.copy(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                            Column {
+                                Text(
+                                    text = "Telemetry & Signal Setti...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurface,
+                                    fontSize = 13.5.sp
                                 )
-                            )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = "Configure bit-depth threshold notifications, studio transmissions, and master drop alerts.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = onSurfaceMuted,
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
 
-                            Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.width(8.dp))
 
-                            Text(
-                                text = if (selectedFilter == "All")
-                                    "No unread notifications or sound engine updates."
-                                else
-                                    "No notifications in the $selectedFilter category.",
-                                style = ReonTokens.BodySmall.copy(
-                                    color = ReonTokens.TextSecondary,
-                                    fontSize = 13.sp
-                                ),
-                                modifier = Modifier.padding(horizontal = 32.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(cardBackground)
+                                .clickable { onOpenSettings() }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Manage",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurface,
+                                    fontSize = 11.5.sp
+                                )
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = onSurface,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
                     }
-                }
-            } else {
-                items(
-                    items = filteredNotifications,
-                    key = { it.id }
-                ) { item ->
-                    NotificationCard(
-                        item = item,
-                        onClick = {
-                            onMarkAsRead(item.id)
-                            when {
-                                item.trackId != null -> {
-                                    val track = state.trendingList.find { it.id == item.trackId }
-                                        ?: state.currentTrack
-                                    onTrackSelect(track)
-                                }
-                                item.category == "AUDIO ENGINE" || item.category == "SYSTEM" -> {
-                                    onOpenSettings()
-                                }
-                                item.category == "DOWNLOADS" -> {
-                                    onOpenDownloads()
-                                }
-                            }
-                        },
-                        onActionClick = {
-                            onMarkAsRead(item.id)
-                            when {
-                                item.trackId != null -> {
-                                    val track = state.trendingList.find { it.id == item.trackId }
-                                        ?: state.currentTrack
-                                    onTrackSelect(track)
-                                }
-                                item.category == "AUDIO ENGINE" || item.category == "SYSTEM" -> {
-                                    onOpenSettings()
-                                }
-                                item.category == "DOWNLOADS" -> {
-                                    onOpenDownloads()
-                                }
-                            }
-                        },
-                        onDismiss = { onDeleteNotification(item.id) }
-                    )
-                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
     }
 }
 
-@Composable
-private fun NotificationCard(
-    item: ReonNotificationItem,
-    onClick: () -> Unit,
-    onActionClick: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val iconVector = when (item.iconType) {
-        "bolt" -> Icons.Rounded.ElectricBolt
-        "download" -> Icons.Rounded.DownloadDone
-        "event" -> Icons.Rounded.Event
-        "settings" -> Icons.Rounded.Settings
-        else -> Icons.Rounded.GraphicEq
-    }
-
-    val iconBgColor = when (item.category) {
-        "AUDIO ENGINE" -> ReonTokens.SoftContainer
-        "RELEASE" -> Color(0xFFEFF6FF)
-        "DOWNLOADS" -> Color(0xFFECFDF5)
-        "LIVE" -> Color(0xFFFFF7ED)
-        else -> ReonTokens.Muted
-    }
-
-    val iconTint = when (item.category) {
-        "AUDIO ENGINE" -> ReonTokens.Primary
-        "RELEASE" -> Color(0xFF2563EB)
-        "DOWNLOADS" -> Color(0xFF059669)
-        "LIVE" -> Color(0xFFEA580C)
-        else -> ReonTokens.TextPrimary
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = ReonTokens.ScreenMargin)
-            .shadow(
-                elevation = if (!item.isRead) 6.dp else 2.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = if (!item.isRead) ReonTokens.Primary.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.05f)
+private fun sampleNotificationGroups(): List<NotificationGroupModel> {
+    return listOf(
+        NotificationGroupModel(
+            groupTitle = "TODAY",
+            rightTag = "2 UNREAD",
+            items = listOf(
+                NotificationItemModel(
+                    id = "notif_1",
+                    title = "Solaris & Kaelen released a mast...",
+                    subtitle = "Album \"Sub-Zero Resonance\" is now streaming in Bit-Perfect 24-Bit / 192kHz FLAC.",
+                    timeAgo = "12m",
+                    isUnread = true,
+                    badge = "FLAC 24",
+                    tags = listOf("192kHz", "PCM"),
+                    actionType = "play",
+                    actionText = "Play Master",
+                    artSeed = 1
+                ),
+                NotificationItemModel(
+                    id = "notif_2",
+                    title = "Lossless Vault Drop: DSD 11.2MHz",
+                    subtitle = "Curated compilation \"Architectural Lows: Volume II\" has been synced to your offline...",
+                    timeAgo = "2h",
+                    isUnread = true,
+                    badge = "DSD 256",
+                    tags = listOf("DSD 11.2MHz", "1.8 GB"),
+                    actionType = "download",
+                    artSeed = 2
+                )
             )
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (!item.isRead) Color.White else Color(0xFFFCFDFE))
-            .border(
-                width = if (!item.isRead) 1.5.dp else 1.dp,
-                color = if (!item.isRead) ReonTokens.Primary.copy(alpha = 0.3f) else ReonTokens.Hairline,
-                shape = RoundedCornerShape(20.dp)
+        ),
+        NotificationGroupModel(
+            groupTitle = "YESTERDAY",
+            rightTag = "ARCHIVED",
+            items = listOf(
+                NotificationItemModel(
+                    id = "notif_3",
+                    title = "Aura Sound Lab is Live",
+                    subtitle = "Studio transmission streaming bit-direct from Stockholm at 96kHz / 24-Bit.",
+                    timeAgo = "1d",
+                    badge = "LIVE",
+                    tags = listOf("REON CORE LIVE STREAM"),
+                    actionType = "tune_in",
+                    actionText = "Tune In",
+                    artSeed = 3
+                ),
+                NotificationItemModel(
+                    id = "notif_4",
+                    title = "Firmware & DAC Engine Sync",
+                    subtitle = "REON CoreAudio Bit-Perfect Engine upgraded to v3.4.1. Ultra-low jitter passthrough active.",
+                    timeAgo = "1d",
+                    badge = "DSP",
+                    tags = listOf("BIT-DIRECT", "v3.4.1 PATCH"),
+                    isSystemIcon = true,
+                    iconType = "dsp"
+                )
             )
-            .clickable(onClick = onClick)
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            // Left Icon in styled squircle
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(iconBgColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = iconVector,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(22.dp)
+        ),
+        NotificationGroupModel(
+            groupTitle = "EARLIER THIS WEEK",
+            rightTag = "VERIFIED",
+            items = listOf(
+                NotificationItemModel(
+                    id = "notif_5",
+                    title = "New Album Pre-save Available",
+                    subtitle = "Mirage Architecture — \"Monolith Variations Pt. III\" releases Oct 28 in Master Quality.",
+                    timeAgo = "3d",
+                    badge = "OCT 28",
+                    tags = listOf("PRE-ALLOCATE CACHE"),
+                    actionType = "pre_save",
+                    actionText = "Pre-save",
+                    artSeed = 4
+                ),
+                NotificationItemModel(
+                    id = "notif_6",
+                    title = "Storage Allocation Synced",
+                    subtitle = "14 uncompressed DSD files cached locally (4.2 GB). Bit-perfect offline vault primed.",
+                    timeAgo = "5d",
+                    badge = "CACHE",
+                    tags = listOf("4.2 GB / 128 GB", "INTERNAL NVME"),
+                    isSystemIcon = true,
+                    iconType = "cache"
                 )
-            }
+            )
+        )
+    )
+}
 
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                // Top Meta Row: Category Badge + Timestamp + Unread Dot
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(iconBgColor)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = item.badge,
-                                style = ReonTokens.LabelSmall.copy(
-                                    color = iconTint,
-                                    fontSize = 8.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-
-                        Spacer(Modifier.width(6.dp))
-
-                        Text(
-                            text = item.timestamp,
-                            style = ReonTokens.BodySmall.copy(
-                                color = ReonTokens.TextTertiary,
-                                fontSize = 11.sp
-                            )
-                        )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (!item.isRead) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(ReonTokens.Primary)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                        }
-
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Close,
-                                contentDescription = "Dismiss",
-                                tint = ReonTokens.TextTertiary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(6.dp))
-
-                // Title
-                Text(
-                    text = item.title,
-                    style = ReonTokens.TitleMedium.copy(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ReonTokens.TextPrimary
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                // Message description
-                Text(
-                    text = item.message,
-                    style = ReonTokens.BodySmall.copy(
-                        color = ReonTokens.TextSecondary,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp
-                    )
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                // Action button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (!item.isRead) ReonTokens.Primary else ReonTokens.Muted)
-                            .clickable(onClick = onActionClick)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = item.actionText,
-                            style = ReonTokens.LabelSmall.copy(
-                                color = if (!item.isRead) Color.White else ReonTokens.TextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp
-                            )
-                        )
-                    }
-                }
-            }
-        }
+private fun getArtUrlForSeed(seed: Int): String {
+    return when (seed % 6) {
+        1 -> "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=300&q=80"
+        2 -> "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=300&q=80"
+        3 -> "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300&q=80"
+        4 -> "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80"
+        5 -> "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&q=80"
+        else -> "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&q=80"
     }
 }

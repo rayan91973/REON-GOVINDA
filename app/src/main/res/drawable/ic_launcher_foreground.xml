@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/ic_launcher_icon"
+        android:drawable="@drawable/reon_app_icon_1790724077804"
         android:gravity="center" />
 </layer-list>

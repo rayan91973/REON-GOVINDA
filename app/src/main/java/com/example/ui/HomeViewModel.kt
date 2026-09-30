@@ -680,6 +680,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun openDownloads() {
+        _uiState.update { state ->
+            state.copy(isDownloadsOpen = true)
+        }
+    }
+
+    fun closeDownloads() {
+        _uiState.update { state ->
+            state.copy(isDownloadsOpen = false)
+        }
+    }
+
     fun openHistory() {
         _uiState.update { state ->
             state.copy(isHistoryOpen = true)

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -34,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.MusicTrack
+import com.example.ui.ReonTokens
 import com.example.ui.theme.ReonColors
 import com.example.ui.theme.ReonSpacing
 
@@ -45,9 +45,9 @@ fun RelatedTracksBentoCard(
 ) {
     BentoCard(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = 0.dp // we handle internal padding to let horizontal scroll go edge to edge inside card
+        contentPadding = 0.dp
     ) {
-        Column(modifier = Modifier.padding(top = ReonSpacing.lg, start = ReonSpacing.lg, end = ReonSpacing.lg)) {
+        Column(modifier = Modifier.padding(top = 12.dp, start = 12.dp, end = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -57,38 +57,38 @@ fun RelatedTracksBentoCard(
                     Icon(
                         imageVector = Icons.Rounded.Recommend,
                         contentDescription = null,
-                        tint = ReonColors.ElectricBlue,
-                        modifier = Modifier.size(16.dp)
+                        tint = ReonTokens.InkHigh,
+                        modifier = Modifier.size(15.dp)
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "RELATED TRACKS",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ReonColors.TextTertiary,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
+                        text = "RELATED ARCHIVES",
+                        style = ReonTokens.LabelMono,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.5.sp,
+                        color = ReonTokens.InkLow
                     )
                 }
                 Text(
-                    text = "Scroll to explore",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = ReonColors.ElectricBlue,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 11.sp
+                    text = "EXPAND",
+                    style = ReonTokens.LabelMono,
+                    color = ReonTokens.InkHigh,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 10.sp
                 )
             }
         }
 
-        Spacer(Modifier.height(ReonSpacing.md))
+        Spacer(Modifier.height(10.dp))
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(
-                start = ReonSpacing.lg,
-                end = ReonSpacing.lg,
-                bottom = ReonSpacing.lg
+                start = 12.dp,
+                end = 12.dp,
+                bottom = 12.dp
             ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(tracks, key = { it.id }) { track ->
                 RelatedTrackItem(track = track, onClick = { onTrackSelect(track) })
@@ -102,64 +102,63 @@ private fun RelatedTrackItem(
     track: MusicTrack,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(4.dp)
     Row(
         modifier = Modifier
-            .width(220.dp)
+            .width(210.dp)
             .clip(shape)
-            .background(ReonColors.SurfaceMuted)
-            .border(1.dp, ReonColors.Border, shape)
+            .background(Color(0xFFFAFAFA))
+            .border(1.dp, ReonTokens.Hairline, shape)
             .clickable(onClick = onClick)
-            .padding(10.dp),
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         TrackArtImage(
             url = track.albumArtUrl,
             contentDescription = track.title,
             modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .size(40.dp)
+                .clip(RoundedCornerShape(3.dp))
         )
 
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = track.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = ReonColors.TextPrimary,
+                style = ReonTokens.BodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = ReonTokens.InkHigh,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = track.artist,
-                style = MaterialTheme.typography.labelSmall,
-                color = ReonColors.TextSecondary,
+                style = ReonTokens.BodySmall,
+                color = ReonTokens.InkMid,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(1.dp))
             Text(
                 text = track.durationLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = ReonColors.TextTertiary,
+                style = ReonTokens.DurationText,
                 fontSize = 10.sp
             )
         }
 
         Box(
             modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(ReonColors.ElectricBlueSoft),
+                .size(24.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(Color(0xFF18181B)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = "Play track",
-                tint = ReonColors.ElectricBlue,
-                modifier = Modifier.size(18.dp)
+                tint = Color.White,
+                modifier = Modifier.size(15.dp)
             )
         }
     }
