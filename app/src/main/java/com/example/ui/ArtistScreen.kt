@@ -35,14 +35,19 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -50,13 +55,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.TrackArtImage
+import com.example.ui.theme.reonExtras
 
 /**
- * REON — Artist Profile Screen
- * Pixel-perfect match to user's uploaded reference UI image (screen.png):
- * Hero card with REON Featured badge, Follow/Radio/Play action bar,
- * REON Master Acoustic Profile bento card, Popular Tracks list,
- * Discography & Master Vault horizontal row, and Editorial Note & Sound Lab card.
+ * REON — Artist Profile Screen (Theme Unified)
+ * Fully cohesive with REON's minimalist dark Brutalist / Sona audio engine aesthetic:
+ * - Dynamic Material 3 color system (OLED canvas, surface containers, crisp typography)
+ * - Hero header card with studio background, format badge & verified check
+ * - High-contrast Following / Radio / Play control dock
+ * - REON Master Acoustic Profile bento card
+ * - Bit-perfect Popular Tracks list with live eq indicators
+ * - Discography & Master Vault horizontal row
+ * - Engineering Editorial Note & Sound Lab specs card
  */
 @Composable
 fun ArtistScreen(
@@ -73,6 +83,15 @@ fun ArtistScreen(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
+    val hairlineColor = MaterialTheme.colorScheme.outlineVariant
+    val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+
     val artist = state.selectedArtist ?: ArtistItem(
         id = "art_aurora",
         name = state.activeArtistName,
@@ -86,7 +105,8 @@ fun ArtistScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .testTag("reon_artist_screen")
     ) {
         LazyColumn(
@@ -100,63 +120,81 @@ fun ArtistScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = ReonSpacing.margin, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier.size(40.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(surfaceHigh)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(10.dp))
+                            .clickable { onBackClick() },
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0B1020),
-                            modifier = Modifier.size(22.dp)
+                            tint = onSurface,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "ARTIST PROFILE",
-                            style = ReonTokens.LabelSmall.copy(
-                                color = Color(0xFF8A94A6),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                                letterSpacing = 1.2.sp
-                            )
+                            style = MaterialTheme.typography.labelSmall,
+                            color = onSurfaceMuted,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            letterSpacing = 1.2.sp
                         )
+                        Spacer(Modifier.height(1.dp))
                         Text(
                             text = artist.name,
-                            style = ReonTokens.HeadlineMedium.copy(
-                                fontSize = 16.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B1020)
-                            )
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface
                         )
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = onShareClick,
-                            modifier = Modifier.size(40.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(surfaceHigh)
+                                .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(10.dp))
+                                .clickable { onShareClick() },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Share,
                                 contentDescription = "Share",
-                                tint = Color(0xFF0B1020),
-                                modifier = Modifier.size(20.dp)
+                                tint = onSurface,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        IconButton(
-                            onClick = onMoreOptionsClick,
-                            modifier = Modifier.size(40.dp)
+
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(surfaceHigh)
+                                .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(10.dp))
+                                .clickable { onMoreOptionsClick() },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = "More",
-                                tint = Color(0xFF0B1020),
-                                modifier = Modifier.size(22.dp)
+                                contentDescription = "More Options",
+                                tint = onSurface,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -168,10 +206,10 @@ fun ArtistScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = ReonSpacing.margin, vertical = 8.dp)
                         .height(260.dp)
-                        .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = Color(0xFF0057FF).copy(alpha = 0.25f))
-                        .clip(RoundedCornerShape(26.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(22.dp))
                 ) {
                     // Studio background image
                     TrackArtImage(
@@ -180,16 +218,16 @@ fun ArtistScreen(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Gradient overlay for readability
+                    // Gradient overlay for flawless text contrast
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                Brush.verticalGradient(
                                     colors = listOf(
-                                        Color.Black.copy(alpha = 0.4f),
-                                        Color.Black.copy(alpha = 0.1f),
-                                        Color.Black.copy(alpha = 0.85f)
+                                        Color.Black.copy(alpha = 0.45f),
+                                        Color.Black.copy(alpha = 0.2f),
+                                        Color.Black.copy(alpha = 0.92f)
                                     )
                                 )
                             )
@@ -207,25 +245,24 @@ fun ArtistScreen(
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(8.dp)
+                                        .size(7.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFF00E5FF))
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
                                     text = "REON Featured Artist",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp
-                                    )
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -234,17 +271,17 @@ fun ArtistScreen(
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(Color(0xFF0057FF).copy(alpha = 0.85f))
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = "96K / 24-BIT",
-                                style = ReonTokens.LabelSmall.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.5.sp,
-                                    letterSpacing = 0.5.sp
-                                )
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.5.sp,
+                                letterSpacing = 0.5.sp
                             )
                         }
                     }
@@ -258,18 +295,17 @@ fun ArtistScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = artist.name,
-                                style = ReonTokens.HeadlineLarge.copy(
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                             Spacer(Modifier.width(8.dp))
                             Icon(
                                 imageVector = Icons.Rounded.Verified,
                                 contentDescription = "Verified",
                                 tint = Color(0xFF00E5FF),
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
@@ -277,42 +313,41 @@ fun ArtistScreen(
 
                         Text(
                             text = "${state.activeArtistListeners} Monthly Listeners · Tokyo / Berlin",
-                            style = ReonTokens.BodySmall.copy(
-                                color = Color.White.copy(alpha = 0.85f),
-                                fontSize = 13.sp
-                            )
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.5.sp
                         )
 
                         Spacer(Modifier.height(6.dp))
 
                         Text(
                             text = "Electronic   •   Modular Synth   •   Deep Ambient",
-                            style = ReonTokens.LabelSmall.copy(
-                                color = Color(0xFF70C5FF),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 12.sp
-                            )
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF70C5FF),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.5.sp
                         )
                     }
                 }
             }
 
-            // 3. Action Buttons Row (Follow | Radio | Big Blue Play)
+            // 3. Action Buttons Row (Follow | Radio | Big Play Button)
             item(key = "artist_action_buttons") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(horizontal = ReonSpacing.margin, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Follow Button
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
-                            .clip(CircleShape)
-                            .background(if (state.isArtistFollowed) Color(0xFF0057FF) else Color(0xFF0B1020))
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (state.isArtistFollowed) onSurface else surfaceHigh)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
                             .clickable { onFollowToggle() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -320,17 +355,16 @@ fun ArtistScreen(
                             Icon(
                                 imageVector = if (state.isArtistFollowed) Icons.Rounded.Check else Icons.Rounded.Add,
                                 contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                tint = if (state.isArtistFollowed) cardBackground else onSurface,
+                                modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = if (state.isArtistFollowed) "Following" else "Follow",
-                                style = ReonTokens.TitleMedium.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (state.isArtistFollowed) cardBackground else onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             )
                         }
                     }
@@ -339,10 +373,10 @@ fun ArtistScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF0F4FC))
-                            .border(1.dp, Color(0xFFD4E2F8), CircleShape)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(cardBackground)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(12.dp))
                             .clickable { onRadioClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -350,28 +384,26 @@ fun ArtistScreen(
                             Icon(
                                 imageVector = Icons.Rounded.Radio,
                                 contentDescription = null,
-                                tint = Color(0xFF0B1020),
-                                modifier = Modifier.size(18.dp)
+                                tint = onSurface,
+                                modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = "Radio",
-                                style = ReonTokens.TitleMedium.copy(
-                                    color = Color(0xFF0B1020),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
+                                style = MaterialTheme.typography.titleMedium,
+                                color = onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             )
                         }
                     }
 
-                    // Big Circular Blue Play Button
+                    // Play Button
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
-                            .shadow(8.dp, CircleShape, spotColor = Color(0xFF0057FF).copy(alpha = 0.4f))
-                            .clip(CircleShape)
-                            .background(Color(0xFF0057FF))
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(onSurface)
                             .clickable {
                                 onPlayClick()
                                 if (popularTracks.isNotEmpty()) onTrackSelect(popularTracks.first())
@@ -382,8 +414,8 @@ fun ArtistScreen(
                         Icon(
                             imageVector = Icons.Rounded.PlayArrow,
                             contentDescription = "Play Artist",
-                            tint = Color.White,
-                            modifier = Modifier.size(26.dp)
+                            tint = cardBackground,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -394,59 +426,58 @@ fun ArtistScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White)
-                        .border(1.dp, Color(0xFFE2EAF8), RoundedCornerShape(20.dp))
-                        .clickable { onShowToast("REON Acoustic Calibration Details") }
-                        .padding(16.dp)
+                        .padding(horizontal = ReonSpacing.margin, vertical = 6.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(cardBackground)
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(16.dp))
+                        .clickable { onShowToast("REON Acoustic Calibration: 96kHz / 24-Bit FLAC") }
+                        .padding(14.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Soft blue icon square
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFFEEF4FF)),
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(surfaceHigh)
+                                .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(10.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.MusicNote,
                                 contentDescription = null,
-                                tint = Color(0xFF0057FF),
-                                modifier = Modifier.size(22.dp)
+                                tint = onSurface,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "REON Master Acoustic Profile",
-                                    style = ReonTokens.TitleMedium.copy(
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0B1020)
-                                    )
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurface
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(Color(0xFFDCFCE7))
+                                        .background(Color(0x1A10B981))
+                                        .border(0.5.dp, Color(0xFF10B981).copy(alpha = 0.4f), RoundedCornerShape(4.dp))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
                                         text = "BIT-PERFECT",
-                                        style = ReonTokens.LabelSmall.copy(
-                                            color = Color(0xFF15803D),
-                                            fontSize = 9.5.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF34D399),
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -455,18 +486,17 @@ fun ArtistScreen(
 
                             Text(
                                 text = "Native 96kHz / 24-Bit FLAC · Dynamic Range 14.2 dB",
-                                style = ReonTokens.BodySmall.copy(
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF5B6480)
-                                )
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 11.5.sp,
+                                color = onSurfaceMuted
                             )
                         }
 
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = Color(0xFF8A94A6),
-                            modifier = Modifier.size(20.dp)
+                            tint = onSurfaceMuted,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -477,8 +507,8 @@ fun ArtistScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(top = 16.dp, bottom = 8.dp)
+                        .padding(horizontal = ReonSpacing.margin)
+                        .padding(top = 18.dp, bottom = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -487,92 +517,92 @@ fun ArtistScreen(
                     ) {
                         Text(
                             text = "Popular Tracks",
-                            style = ReonTokens.HeadlineMedium.copy(
-                                fontSize = 19.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B1020)
-                            )
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface
                         )
 
                         Text(
                             text = "See All",
-                            style = ReonTokens.LabelSmall.copy(
-                                color = Color(0xFF0057FF),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp
-                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = onSurfaceMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
                             modifier = Modifier.clickable { onShowToast("All tracks by ${artist.name}") }
                         )
                     }
 
                     Text(
                         text = "Master releases streamed in bit-perfect lossless",
-                        style = ReonTokens.BodySmall.copy(
-                            fontSize = 12.5.sp,
-                            color = Color(0xFF5B6480)
-                        )
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 12.sp,
+                        color = onSurfaceMuted
                     )
                 }
             }
 
             // 6. Popular Tracks List Items
             itemsIndexed(popularTracks, key = { _, track -> "artist_pop_${track.id}" }) { index, track ->
-                val isCurrentPlaying = index == 0 && state.currentTrack.id == track.id
+                val isCurrentPlaying = state.currentTrack.id == track.id
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isCurrentPlaying) Color(0xFFEEF4FF) else Color.Transparent)
-                        .border(1.dp, if (isCurrentPlaying) Color(0xFFC2D8FF) else Color.Transparent, RoundedCornerShape(16.dp))
+                        .padding(horizontal = ReonSpacing.margin, vertical = 3.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isCurrentPlaying) surfaceHigh else cardBackground)
+                        .border(
+                            ReonSize.hairline,
+                            if (isCurrentPlaying) onSurface.copy(alpha = 0.3f) else hairlineColor,
+                            RoundedCornerShape(12.dp)
+                        )
                         .clickable { onTrackSelect(track) }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Rank number or active equalizing icon
-                    if (isCurrentPlaying) {
+                    if (isCurrentPlaying && state.currentTrack.isPlaying) {
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF0057FF)),
+                                .size(26.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(onSurface),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.GraphicEq,
                                 contentDescription = "Playing",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                tint = cardBackground,
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     } else {
                         Text(
                             text = "${index + 1}",
-                            style = ReonTokens.BodySmall.copy(
-                                color = Color(0xFF8A94A6),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp
-                            ),
-                            modifier = Modifier.width(28.dp)
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isCurrentPlaying) onSurface else onSurfaceMuted,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            modifier = Modifier.width(26.dp)
                         )
                     }
 
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(6.dp))
 
                     // Square icon or track art
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFF0F4FC)),
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(surfaceHigh),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MusicNote,
                             contentDescription = null,
-                            tint = if (isCurrentPlaying) Color(0xFF0057FF) else Color(0xFF5B6480),
-                            modifier = Modifier.size(18.dp)
+                            tint = if (isCurrentPlaying) onSurface else onSurfaceMuted,
+                            modifier = Modifier.size(17.dp)
                         )
                     }
 
@@ -583,11 +613,10 @@ fun ArtistScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = track.title,
-                                style = ReonTokens.TitleMedium.copy(
-                                    fontSize = 14.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isCurrentPlaying) Color(0xFF0057FF) else Color(0xFF0B1020)
-                                ),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -597,16 +626,16 @@ fun ArtistScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(if (isCurrentPlaying) Color(0xFF0057FF) else Color(0xFFEEF2FA))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        .background(surfaceHigh)
+                                        .border(0.5.dp, hairlineColor, RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 5.dp, vertical = 1.5.dp)
                                 ) {
                                     Text(
                                         text = track.badge,
-                                        style = ReonTokens.LabelSmall.copy(
-                                            color = if (isCurrentPlaying) Color.White else Color(0xFF424D6B),
-                                            fontSize = 9.5.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = onSurfaceMuted,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -614,31 +643,29 @@ fun ArtistScreen(
 
                         Text(
                             text = track.plays.ifEmpty { "5,412,890 plays" },
-                            style = ReonTokens.BodySmall.copy(
-                                fontSize = 12.sp,
-                                color = Color(0xFF5B6480)
-                            )
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 11.5.sp,
+                            color = onSurfaceMuted
                         )
                     }
 
                     Text(
                         text = track.duration,
-                        style = ReonTokens.BodySmall.copy(
-                            color = Color(0xFF5B6480),
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onSurfaceMuted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
 
                     IconButton(
                         onClick = { onShowToast("Options for ${track.title}") },
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
                             contentDescription = "More",
-                            tint = Color(0xFF8A94A6),
-                            modifier = Modifier.size(18.dp)
+                            tint = onSurfaceMuted,
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 }
@@ -649,7 +676,7 @@ fun ArtistScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
+                        .padding(horizontal = ReonSpacing.margin)
                         .padding(top = 22.dp, bottom = 12.dp)
                 ) {
                     Row(
@@ -659,20 +686,18 @@ fun ArtistScreen(
                     ) {
                         Text(
                             text = "Discography & Master Vault",
-                            style = ReonTokens.HeadlineMedium.copy(
-                                fontSize = 18.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0B1020)
-                            )
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface
                         )
 
                         Text(
                             text = "Albums",
-                            style = ReonTokens.LabelSmall.copy(
-                                color = Color(0xFF0057FF),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp
-                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = onSurfaceMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
                             modifier = Modifier.clickable { onShowToast("Viewing Discography") }
                         )
                     }
@@ -685,7 +710,7 @@ fun ArtistScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = ReonSpacing.margin),
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     val sampleAlbums = listOf(
@@ -696,14 +721,15 @@ fun ArtistScreen(
                     sampleAlbums.forEach { album ->
                         Column(
                             modifier = Modifier
-                                .width(165.dp)
+                                .width(155.dp)
                                 .clickable { onAlbumSelect(album) }
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(165.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .shadow(8.dp, RoundedCornerShape(20.dp))
+                                    .size(155.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(cardBackground)
+                                    .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(16.dp))
                             ) {
                                 TrackArtImage(
                                     url = if (album.id == "alb_sonic_geom") "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80" else "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80",
@@ -717,16 +743,15 @@ fun ArtistScreen(
                                         .align(Alignment.TopEnd)
                                         .padding(8.dp)
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(Color.Black.copy(alpha = 0.65f))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        .background(Color.Black.copy(alpha = 0.7f))
+                                        .padding(horizontal = 7.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = if (album.id == "alb_sonic_geom") "Master 96k" else "Dolby Atmos",
-                                        style = ReonTokens.LabelSmall.copy(
-                                            color = Color.White,
-                                            fontSize = 9.5.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
 
@@ -736,16 +761,15 @@ fun ArtistScreen(
                                         .align(Alignment.BottomStart)
                                         .padding(8.dp)
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(Color(0xFF0057FF))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        .background(onSurface)
+                                        .padding(horizontal = 7.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = if (album.id == "alb_sonic_geom") "Latest LP" else "STUDIO ARCHIVE",
-                                        style = ReonTokens.LabelSmall.copy(
-                                            color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = cardBackground,
+                                        fontSize = 8.5.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -754,21 +778,19 @@ fun ArtistScreen(
 
                             Text(
                                 text = album.title,
-                                style = ReonTokens.TitleMedium.copy(
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0B1020)
-                                ),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
 
                             Text(
-                                text = "${album.year} · ${album.trackCount} · ${album.genre}",
-                                style = ReonTokens.BodySmall.copy(
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF5B6480)
-                                )
+                                text = "${album.year} · ${album.trackCount}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 11.5.sp,
+                                color = onSurfaceMuted
                             )
                         }
                     }
@@ -780,11 +802,11 @@ fun ArtistScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White)
-                        .border(1.dp, Color(0xFFE2EAF8), RoundedCornerShape(22.dp))
-                        .padding(20.dp)
+                        .padding(horizontal = ReonSpacing.margin, vertical = 18.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(cardBackground)
+                        .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(18.dp))
+                        .padding(18.dp)
                 ) {
                     Column {
                         Row(
@@ -794,35 +816,32 @@ fun ArtistScreen(
                         ) {
                             Text(
                                 text = "EDITORIAL NOTE & SOUND LAB",
-                                style = ReonTokens.LabelSmall.copy(
-                                    color = Color(0xFF0057FF),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    letterSpacing = 1.sp
-                                )
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.5.sp,
+                                letterSpacing = 1.sp
                             )
 
                             Text(
                                 text = "REON Sonic ID #892",
-                                style = ReonTokens.LabelSmall.copy(
-                                    color = Color(0xFF8A94A6),
-                                    fontSize = 11.sp
-                                )
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceMuted,
+                                fontSize = 10.5.sp
                             )
                         }
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(10.dp))
 
                         Text(
-                            text = "Formed in Berlin and refined through Tokyo's avant-garde analog clubs, Aurora Glow pair vintage Buchla and Eurorack modular synthesizers with pristine 96kHz acoustic spatialization. Their recordings feature unfiltered transient responses and custom-engineered harmonic overtones.",
-                            style = ReonTokens.BodySmall.copy(
-                                color = Color(0xFF384360),
-                                fontSize = 13.sp,
-                                lineHeight = 19.sp
-                            )
+                            text = "Formed in Berlin and refined through Tokyo's avant-garde analog clubs, ${artist.name} pair vintage Buchla and Eurorack modular synthesizers with pristine 96kHz acoustic spatialization. Their recordings feature unfiltered transient responses and custom-engineered harmonic overtones.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = onSurfaceMuted,
+                            fontSize = 12.5.sp,
+                            lineHeight = 18.sp
                         )
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(14.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -831,11 +850,10 @@ fun ArtistScreen(
                         ) {
                             Text(
                                 text = "Mastering Vault Status",
-                                style = ReonTokens.BodySmall.copy(
-                                    color = Color(0xFF0B1020),
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 12.5.sp
-                                )
+                                style = MaterialTheme.typography.bodySmall,
+                                color = onSurface,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp
                             )
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -848,11 +866,10 @@ fun ArtistScreen(
                                 Spacer(Modifier.width(6.dp))
                                 Text(
                                     text = "Verified Bit-Perfect",
-                                    style = ReonTokens.LabelSmall.copy(
-                                        color = Color(0xFF10B981),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    )
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF34D399),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.5.sp
                                 )
                             }
                         }
