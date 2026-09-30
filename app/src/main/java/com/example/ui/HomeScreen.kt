@@ -352,29 +352,29 @@ fun HomeScreen(
                     )
                 }
                 HomeTab.Home -> {
-                    var selectedHomeCategory by remember { mutableStateOf("All Focus") }
+                    var selectedHomeCategory by remember { mutableStateOf("All") }
 
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 180.dp)
                     ) {
-                        // 1. Top Bar (< ■ REON | Analytics, Notifications, Tune, Avatar >)
+                        // 1. Top Bar (REON [STUDIO] | Notifications, Tune, Avatar)
                         item(key = "section_top_bar") {
                             HomeTopBar(
                                 onAnalyticsClick = onOpenAnalytics,
                                 onNotificationClick = onOpenNotifications,
-                                onFiltersClick = { onShowToast("Library filters") },
+                                onFiltersClick = { onShowToast("Filter Audio Options") },
                                 onProfileClick = { onTabSelected(HomeTab.Settings) }
                             )
                         }
 
-                        // 2. Greeting Header Block (FEED // 010.4 | Good evening, Listener | ● 96KHZ • 24-BIT)
+                        // 2. Greeting Header Block (TUESDAY, OCTOBER 24 | ● LOSSLESS 24-BIT | Good evening)
                         item(key = "section_greeting_header") {
                             HomeGreetingHeader()
                         }
 
-                        // 3. Category Filter Chips (All Focus, Hi-Res Masters, Curated Vaults, Ambient)
+                        // 3. Category Filter Chips (All, Playlists, Albums, Artists, Hi-Res)
                         item(key = "section_category_chips") {
                             HomeCategoryChips(
                                 selectedCategory = selectedHomeCategory,
@@ -382,74 +382,70 @@ fun HomeScreen(
                             )
                         }
 
-                        // 4. Hero Featured Acoustic Residency Card
+                        // 4. Featured Release Hero Card (Nocturne Sessions Vol. IV)
                         item(key = "section_hero_residency") {
                             HomeHeroAcousticResidencyCard(
                                 onStreamMasterClick = {
                                     onTrackSelect(
                                         TrackItem(
                                             id = "nt_4",
-                                            title = "Nocturne Trance Sessions Vol. IV",
-                                            artist = "Solaris & Kaelen feat. Aura",
-                                            album = "Acoustic Residency",
-                                            duration = "6:12",
-                                            badge = "HI-RES",
+                                            title = "Nocturne Sessions Vol. IV",
+                                            artist = "Solaris & Kaelen",
+                                            album = "Nocturne Sessions",
+                                            duration = "5:20",
+                                            badge = "24-BIT",
                                             artSeed = 1
                                         )
                                     )
+                                    onShowToast("Playing Nocturne Sessions Vol. IV")
                                 },
-                                onBookmarkClick = { onShowToast("Saved to Bookmarks") }
+                                onAddClick = { onShowToast("Added to Library") },
+                                onMoreClick = { onShowToast("Album Options") }
                             )
                         }
 
-                        // 5. "■ Jump Back In" (Resume Dock)
+                        // 5. Jump Back In (2x2 Grid with Progress Bars)
                         item(key = "section_jump_back_in") {
-                            HomeJumpBackInGrid(onTrackSelect = onTrackSelect)
+                            HomeJumpBackInGrid(
+                                onTrackSelect = onTrackSelect,
+                                onSeeAllClick = { onShowToast("Viewing All Recent Listening") }
+                            )
                         }
 
-                        // 6. "■ Curated Vaults"
+                        // 6. Curated Playlists (Late Night Resonance, Architectural Lows)
                         item(key = "section_curated_vaults") {
                             HomeCuratedVaultsRow(
                                 onVaultSelect = { vault ->
                                     onOpenPlaylist(
                                         PlaylistItem(
                                             id = "pl_v1",
-                                            title = if (vault == "all") "Curated Vaults" else vault,
-                                            subtitle = "Ambient & Deep Spatial Works",
+                                            title = if (vault == "all") "Curated Playlists" else vault,
+                                            subtitle = "Deep spatial soundscapes & modular works",
                                             trackCount = "28 tracks",
                                             duration = "2h 42m",
                                             artSeed = 1
                                         )
                                     )
-                                }
+                                },
+                                onSeeAllClick = { onShowToast("Viewing All 18 Playlists") }
                             )
                         }
 
-                        // 7. "■ Heavy Rotation" (01 to 04 with play triggers)
+                        // 7. Quick Picks (Vertical track list with circular play triggers)
                         item(key = "section_heavy_rotation") {
-                            HomeHeavyRotationList(onTrackSelect = onTrackSelect)
-                        }
-
-                        // 8. "■ New Lossless Masters"
-                        item(key = "section_new_lossless_masters") {
-                            HomeNewLosslessMastersRow(
-                                onMasterSelect = { master ->
-                                    onOpenAlbum(
-                                        AlbumItem(
-                                            id = "alb_m1",
-                                            title = master,
-                                            artist = "Solaris & Kaelen",
-                                            year = "2025",
-                                            trackCount = "8 tracks",
-                                            genre = "Electronic",
-                                            artSeed = 2
-                                        )
+                            HomeHeavyRotationList(
+                                onTrackSelect = onTrackSelect,
+                                onPlayAllClick = {
+                                    onTrackSelect(
+                                        TrackItem("qp_1", "Crystalline Dispersion", "Solaris & Aura Lab", "Quick", "6:42", badge = "LOSSLESS", artSeed = 1)
                                     )
-                                }
+                                    onShowToast("Playing Quick Picks Queue")
+                                },
+                                onShowToast = onShowToast
                             )
                         }
 
-                        // 9. "■ Artists in Residence"
+                        // 8. Artists You May Like (Solaris & Kaelen, Aura Sound Lab)
                         item(key = "section_artists_in_residence") {
                             HomeArtistsInResidenceRow(
                                 onArtistSelect = { artistName ->
@@ -463,13 +459,9 @@ fun HomeScreen(
                                         )
                                     )
                                 },
-                                onFollowClick = { onShowToast("Followed $it") }
+                                onFollowClick = { onShowToast("Followed $it") },
+                                onExploreClick = { onShowToast("Exploring Featured Artists") }
                             )
-                        }
-
-                        // 10. "☵ REON Acoustic Architecture" Telemetry Card
-                        item(key = "section_telemetry_architecture") {
-                            HomeTelemetryArchitectureCard()
                         }
                     }
                 }

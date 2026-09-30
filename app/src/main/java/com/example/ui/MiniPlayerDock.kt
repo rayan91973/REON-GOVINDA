@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,16 +18,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -48,17 +45,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.components.TrackArtImage
 import com.example.ui.theme.reonExtras
 
 /**
- * REON — Mini Player Dock
- * - Height: 64dp, 12dp radius, 8dp horizontal inset, hairline border.
- * - Glass surface, Layer 1 shadow (none on OLED).
- * - 40dp album art at 8dp radius.
- * - Title and artist with technical telemetry.
- * - 40dp play/pause button (12dp rounded-square, 48dp minimum touch target).
- * - 2dp progress line along the bottom edge (on-surface over surface-container-high).
- * - Swipe left/right to skip, tap or swipe up to expand Now Playing.
+ * REON — Floating Mini Player Dock
+ * Pixel-perfect match to user's uploaded mockup:
+ * - Square album thumbnail on the left
+ * - Active track title & artist format metadata
+ * - Heart icon button
+ * - Circular Pause/Play button
  */
 @Composable
 fun MiniPlayerDock(
@@ -73,28 +69,27 @@ fun MiniPlayerDock(
     modifier: Modifier = Modifier,
     playbackProgress: Float = 0.37f
 ) {
-    val miniPlayerShape = RoundedCornerShape(ReonRadius.lg) // 12dp radius
-    val isOled = MaterialTheme.reonExtras.isOled
+    val miniPlayerShape = RoundedCornerShape(16.dp)
     val cardBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
     val hairlineColor = MaterialTheme.colorScheme.outlineVariant
-    val accentColor = MaterialTheme.reonExtras.accent
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.reonExtras.onSurfaceMuted
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp) // 8dp horizontal inset
-            .then(
-                if (isOled) Modifier else Modifier.shadow(
-                    elevation = 12.dp,
-                    shape = miniPlayerShape,
-                    ambientColor = Color(0x1A000000),
-                    spotColor = Color(0x20000000)
-                )
+            .padding(horizontal = 14.dp)
+            .shadow(
+                elevation = 8.dp,
+                shape = miniPlayerShape,
+                ambientColor = Color(0x14000000),
+                spotColor = Color(0x1A000000)
             )
             .clip(miniPlayerShape)
             .background(cardBackground)
             .border(ReonSize.hairline, hairlineColor, miniPlayerShape)
-            .height(ReonSize.miniPlayerHeight) // 64dp
+            .height(68.dp)
             .pointerInput(Unit) {
                 var totalDragX = 0f
                 var totalDragY = 0f
@@ -104,11 +99,11 @@ fun MiniPlayerDock(
                         totalDragY = 0f
                     },
                     onDragEnd = {
-                        if (totalDragY < -60f) {
+                        if (totalDragY < -50f) {
                             onExpand()
-                        } else if (totalDragX > 80f) {
+                        } else if (totalDragX > 70f) {
                             onPrevious()
-                        } else if (totalDragX < -80f) {
+                        } else if (totalDragX < -70f) {
                             onNext()
                         }
                     },
@@ -125,7 +120,7 @@ fun MiniPlayerDock(
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+                indication = ripple(bounded = true, color = onSurface.copy(alpha = 0.05f)),
                 onClick = onExpand
             )
             .testTag("floating_mini_player")
@@ -135,75 +130,76 @@ fun MiniPlayerDock(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Left: 40dp Art (8dp radius) + Title / Artist
+                // Left: Square Thumbnail + Title / Subtitle
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .weight(1f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+                            indication = ripple(bounded = true, color = onSurface.copy(alpha = 0.05f)),
                             onClick = onExpand
                         )
                         .testTag("mini_track_info")
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(ReonRadius.md)) // 8dp radius
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(ReonRadius.md))
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(surfaceHigh)
+                            .border(ReonSize.hairline, hairlineColor, RoundedCornerShape(8.dp))
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.art_refractions),
+                        TrackArtImage(
+                            url = "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=300&q=80",
                             contentDescription = "Mini Album Art",
-                            contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
 
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
 
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = track.title,
+                            text = track.title.ifEmpty { "Midnight City Lights" },
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface,
+                            fontSize = 14.5.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(Modifier.height(1.dp))
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            text = "${track.artist} · 24-bit 96kHz FLAC",
-                            style = ReonTokens.LabelMono,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.reonExtras.onSurfaceMuted,
+                            text = "${track.artist.ifEmpty { "Solaris & Kaelen" }} • 24-BIT",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 11.5.sp,
+                            color = onSurfaceMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // Right Transport Controls: Like, Prev, Play/Pause (12dp rounded-square), Next
+                // Right Transport Controls: Heart + Circular Pause/Play
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Like button: 48dp touch target
+                    // Like button
                     Box(
                         modifier = Modifier
-                            .size(ReonSize.touchTargetMin)
+                            .size(38.dp)
+                            .clip(CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                                indication = ripple(bounded = true, color = onSurface.copy(alpha = 0.08f)),
                                 onClick = onLike
                             )
                             .testTag("mini_like_button"),
@@ -212,93 +208,48 @@ fun MiniPlayerDock(
                         Icon(
                             imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                             contentDescription = if (isLiked) "Favorited" else "Favorite",
-                            tint = if (isLiked) MaterialTheme.colorScheme.onSurface else MaterialTheme.reonExtras.onSurfaceMuted,
-                            modifier = Modifier.size(ReonSize.iconSm)
+                            tint = onSurface,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
-                    // Previous button: 48dp touch target
+                    // Circular Play/Pause button
                     Box(
                         modifier = Modifier
-                            .size(ReonSize.touchTargetMin)
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(surfaceHigh)
+                            .border(ReonSize.hairline, hairlineColor, CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                                onClick = onPrevious
+                                indication = ripple(bounded = true, color = onSurface.copy(alpha = 0.15f)),
+                                onClick = onPlayPause
                             )
-                            .testTag("mini_prev_button"),
+                            .testTag("mini_play_button"),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.SkipPrevious,
-                            contentDescription = "Previous",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(ReonSize.iconMd)
-                        )
-                    }
-
-                    // Play/Pause button: 40dp visual, 12dp rounded-square, 48dp min touch target
-                    Box(
-                        modifier = Modifier
-                            .size(ReonSize.touchTargetMin),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(ReonRadius.lg)) // 12dp rounded-square
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)),
-                                    onClick = onPlayPause
-                                )
-                                .testTag("mini_play_button"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    // Next button: 48dp touch target
-                    Box(
-                        modifier = Modifier
-                            .size(ReonSize.touchTargetMin)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                                onClick = onNext
-                            )
-                            .testTag("mini_next_button"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.SkipNext,
-                            contentDescription = "Next",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(ReonSize.iconMd)
+                            imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            tint = onSurface,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
 
-            // 2dp Progress Line along the bottom edge: on-surface (or accent) over surface-container-high
+            // Subtle 2dp progress bar along bottom
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(ReonSize.seekTrack) // 2dp
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .height(2.dp)
+                    .background(surfaceHigh)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(playbackProgress.coerceIn(0f, 1f))
                         .fillMaxHeight()
-                        .background(accentColor)
+                        .background(onSurface)
                 )
             }
         }
